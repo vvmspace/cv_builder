@@ -100,7 +100,7 @@ RabbitMQ, Redis, Apache Kafka, NATS, gRPC, Prisma
 Information Security, Moscow Technological University
 
 ## Languages:
-English: Advanced (B2~C1)
-Español: Beginner (A1-A2)
-Français: Beginner (A1)
-Armenian (Արմենիան): Beginner
+- English: Advanced (B2~C1)
+- Español: Beginner (A1-A2)
+- Français: Beginner (A1)
+- Armenian (Արմենիան): Beginner
