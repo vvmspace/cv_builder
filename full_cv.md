@@ -4,17 +4,24 @@
 Senior/Lead Full Stack Developer (Node + Rust, Python) with experience in managing the entire project lifecycle. Strong as a developer, I strive to bring value to projects with my full range of skills. Experienced in Analytics/Management and Architecture/DevOps roles. Thrice held a position at the ~CTO level.
 
 ## Professional Summary:
-17+ years of programming experience, with 8+ years of commercial software development.
-Successfully launched 3 startups and integrated 2 commercial ML/AI solutions
-I have been monitoring the growth of cryptocurrencies since 2014.
-Passionate about innovative technologies, especially AI and Machine Learning, seeking to leverage extensive background in software development to create impactful solutions.
-Proficient in modern web technologies and interested in exploring new tools and platforms.
-I am fully involved in every project I undertake and work towards results.
+- 17+ years of programming experience, with 8+ years of commercial software development.
+- Successfully launched 3 startups and integrated 2 commercial ML/AI solutions
+- I have been monitoring the growth of cryptocurrencies since 2014.
+- Passionate about innovative technologies, especially AI and Machine Learning, seeking to leverage extensive background in software development to create impactful solutions.
+- Proficient in modern web technologies and interested in exploring new tools and platforms.
+- I am fully involved in every project I undertake and work towards results.
 
 ## Technical Skills:
+
+### AI Tools and experience:
+- Prompt Engineering: focus on implementing feature/microservice/app from 1st prompt + AGENTS.md/GEMINI.md/CLAUDE.md
+- TDD with AI: tests are the first source of truth
+- Editors: Cursor, Codex, Replit, Google Antigravity, Kiro, Windsurf, QWEN Coder, Claude, Copilot
+- Models APIs & Web tools: OpenAI, QWEN, Grok, Perplexity, Ollama, Gemini, DeepSeek, and many others
+
 ### Programming Languages and Frameworks:
-- Proficient: TypeScript, JavaScript, NodeJS, ExpressJS, NestJS
-- Basic Knowledge:  Python, Rust, Golang, Java
+- Proficient: TypeScript, JavaScript, Rust, NodeJS, ExpressJS, NestJS
+- Basic Knowledge:  Solidity, Python, Golang, Java, Kotlin
 - Past Experience: PHP (Laravel + old web) until 2017
 
 ### Cloud Technologies and DevOps:
@@ -23,8 +30,8 @@ I am fully involved in every project I undertake and work towards results.
 - CI Tools: GitLab CI, Jenkins, Drone CI
 
 ### Data Management Processing and tools:
-Databases: PostgreSQL, MongoDB, DynamoDB, AstraDB, Firebase
-RabbitMQ, Redis, Apache Kafka, NATS, gRPC, Prisma
+- Databases: PostgreSQL, MongoDB, DynamoDB, AstraDB, Firebase
+- RabbitMQ, Redis, Apache Kafka, NATS, gRPC, Prisma
 
 ### Front-end:
 - React, Vue, Next, Nuxt
