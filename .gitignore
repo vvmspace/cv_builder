@@ -1,46 +1,4 @@
 ```
 # Build artifacts
 *.html
-*.comment.md
-
-# Dependencies
-node_modules/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-dist/
-build/
-*.egg-info/
-.eggs/
-.venv/
-venv/
-.env
-.env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Coverage
-.coverage
-htmlcov/
-coverage/
-
-# Python specific
-*.py[cod]
-*$py.class
-*.so
-.Python
 ```
