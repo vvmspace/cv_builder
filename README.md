@@ -60,10 +60,10 @@ There you will find a user-friendly web interface where you can:
 
 ### API Endpoint
 
-Alternatively, you can generate a new CV programmatically by calling the `/api/generate-cv` endpoint. Your prompt will be constructed and sent to the LLM automatically.
+Alternatively, you can generate a new CV programmatically by calling the `/api/v1/generate-cv` endpoint. Your prompt will be constructed and sent to the LLM automatically.
 
 ```bash
-curl -X POST http://localhost:3000/api/generate-cv \
+curl -X POST http://localhost:3000/api/v1/generate-cv \
      -H "Content-Type: application/json" \
      -d '{
        "vacancy_text": "Paste the complete vacancy description here...",

@@ -9,8 +9,6 @@
 - озадачить (ректутер/читающий специалист должен читать и видеть полный метч+)
 - укрепить хорошее впечатление и создать (даже подсознательно, можно психотехниками без палева) (навязчивое) желание оффера
 
-</outdated>
-
 
 ## При написании конвертера:
 При генерации PDF из HTML проверяй отсутствия колонтитулов от конвертации, что нет разрыва логических блоков.
@@ -36,5 +34,81 @@
 -- cv_name.pdf
 -- cv_name.comment.md - комментарий что добавлено в этом CV, советы как общаться по этой позиции
 
+## Antigoals
 
-КОСЯКОВ В PDF БЫТЬ НЕ ДОЛЖНО. ПРОВЕРЯЙ СЕБЯ ПОСЛЕ СБОРКИ, УЧИТЫВАЙ РАЗБИЕНИЕ НА СТРАНИЦЫ ЕЩЁ НА ЭТАПЕ ПРОДУМЫВАНИЯ ДИЗАЙНА И СОЗДАНИЯ HTML.
+- Manual editing: ПРОВЕРЯЙ СЕБЯ ПОСЛЕ СБОРКИ, УЧИТЫВАЙ РАЗБИЕНИЕ НА СТРАНИЦЫ ЕЩЁ НА ЭТАПЕ ПРОДУМЫВАНИЯ ДИЗАЙНА И СОЗДАНИЯ HTML.
+
+</outdated>
+
+# Project: CV AI Adapter
+
+## Hosting & Running
+
+- Possibility to run locally / on any server
+- Possibility to run on Netlify
+- Every method/function is a function that must be wrapped in a lambda (Netlify function) and in express
+
+## API
+
+### /api/v1/generate_cv
+
+POST
+
+Generate CV from vacancy text and full CV:
+- prompt.md (fallback: prompt.example.md) - template for LLM
+- full_cv.md (fallback: full_cv.example.md) - full CV. Can be sent as full_cv_text in body.
+- cv.json (fallback: cv.example.json) - example of CV JSON
+
+Body:
+- vacancy_text: string
+- custom_comment?: string
+- template?: string = 'dark'
+- model?: string = 'gemini-2.5-flash'
+- full_cv_text?: string // don't use it on frontend
+
+
+Response:
+- html_url: string // relative path to cv
+- pdf_url: string // relative path to cv
+- pdf_absolute_path: string // absolute path to cv
+
+### /api/v1/telegram/webhook
+
+POST
+
+Set webhook for telegram bot.
+
+Body reference: https://core.telegram.org/bots/api
+
+## Telegram bot
+
+### Incoming message:
+
+Incoming message can contain:
+- link to vacancy
+- custom comment
+
+Supported links:
+- link to post on LinkedIn: (https://www.linkedin.com/posts/username_some-text-activity-432142314-ObeP?utm...) - extract vacancy text like from linkedin.post.example.html
+
+Action:
+- parse vacancy text from linkedin post and use it as vacancy_text
+- parse recruiter contact (linkedin profile link) and name from linkedin post and use it as recruiter_contact and recruiter_name in outgoing message
+- use incoming text as custom_comment
+- generate CV in dark and light templates
+- generate comment about difference between full CV and generated CV and recomendations for reading, how to act on screening and interview
+- send CVs to telegram
+
+### Outgoing message:
+
+Outgoing message should contain:
+- attachment with CVs in dark and light templates
+- comment about difference between full CV and generated CV and recomendations for reading, how to act on screening and interview
+- recruiter_contact (linkedin profile link) and recruiter_name
+
+### Environment variables:
+- TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN
+
+## Frontend
+
+- The most simple frontend is in public/index.html
