@@ -1,0 +1,128 @@
+{
+    "title": "Name From Fullcv - Position fits this job or from CV if not provided",
+    "name": "Name From Fullcv",
+    "role": "Position for this job",
+    "email": "Email from Fullcv",
+    "phone": "Phone from Fullcv",
+    "location": "Location from Fullcv",
+    "github": "github.com/vvmspace",
+    "github_link": "https://github.com/vvmspace",
+    "professional_objective": "Professional objective with best fit for this job based on Fullcv",
+    "skills": [
+        {
+            "category": "Backend",
+            "items": [
+                "Node.js / TypeScript",
+                "NestJS / Express",
+                "Microservices",
+                "High-Load / HA",
+                "Rust (Performance)"
+            ]
+        },
+        {
+            "category": "Blockchain / Web3",
+            "items": [
+                "Web3.js / Ethers.js",
+                "Solidity (Basic)",
+                "NEAR Protocol",
+                "DeFi / Tokenomics",
+                "Digital Finance"
+            ]
+        },
+        {
+            "category": "Data & AI",
+            "items": [
+                "PostgreSQL / SQL",
+                "MongoDB / Atlas",
+                "Redis / RabbitMQ",
+                "Vector Search",
+                "RAG / Vertex AI"
+            ]
+        },
+        {
+            "category": "DevOps & Sec",
+            "items": [
+                "AWS / Serverless",
+                "Docker / Kubernetes",
+                "CI/CD (GitLab)",
+                "Information Security",
+                "System Design"
+            ]
+        }
+    ],
+    "experience": [
+        {
+            "title": "Senior Lead Backend Developer / Acting CTO",
+            "company": "// FrieNDA",
+            "period": "2024 – 2025",
+            "tags": [
+                "[FinTech]",
+                "[Social]",
+                "[High-Load]"
+            ],
+            "description_items": [
+                "**Engineered** the core microservices architecture on **Node.js/NestJS** with **RabbitMQ**, establishing the product's foundation from the startup phase.",
+                "**Directed** the technical vision and infrastructure roadmap (AWS, CI/CD), covering broad CTO responsibilities during the platform's launch.",
+                "**Integrated** the **NEAR Protocol** and Wallet Connect, enabling secure on-chain transactions and user wallet management.",
+                "**Designed** a RAG system using **Google Vertex AI** and **MongoDB Atlas Vector Search** for context-aware AI features.",
+                "**Coordinated** integrations with external partners and managed the development team to ensure timely feature delivery."
+            ]
+        },
+        {
+            "title": "Senior Backend Developer",
+            "company": "// AI Matching System",
+            "period": "2022 – 2024",
+            "tags": [],
+            "description_items": [
+                "**Architected** a **Web3.js** based cashback system with **ERC-20** smart contract interactions, connecting loyalty rewards with blockchain.",
+                "**Pioneered** the early adoption of **OpenAI Embeddings** with **ElasticSearch** (Vector Search) before widespread database support existed.",
+                "**Developed** complex semantic matching algorithms, evolving the system from research to a fully functional platform.",
+                "**Implemented** robust API handling for AI models, managing rate limits and data flow efficiency."
+            ]
+        },
+        {
+            "title": "Team Lead / Senior Developer",
+            "company": "// Digital Document Exchange",
+            "period": "2020 – 2022",
+            "tags": [
+                "[SaaS]",
+                "[Security]",
+                "[eKYC]"
+            ],
+            "description_items": [
+                "**Led** the development of a hybrid SaaS platform for digital signatures and contract management.",
+                "**Integrated** 3rd-party **ML-based eKYC** platforms for face validation, enhancing identity verification processes.",
+                "**Ensured** strict compliance with data protection standards using encryption and secure storage practices."
+            ]
+        },
+        {
+            "title": "Blockchain Research & Dev",
+            "company": "// Crypto Collectibles Project",
+            "period": "~2018",
+            "tags": [
+                "[Crypto]",
+                "[Smart Contracts]"
+            ],
+            "description_items": [
+                "**Researched** ecosystem mechanics: Token minting, staking strategies, and transaction fee optimization.",
+                "**Developed** early smart contract logic for digital asset provenance and ownership tracking."
+            ]
+        },
+        {
+            "title": "Team Lead / Node.js Developer",
+            "company": "// Loyalty Program",
+            "period": "2017 – 2022",
+            "tags": [
+                "[High-Load]",
+                "[Loyalty]"
+            ],
+            "description_items": [
+                "**Scaled** the backend to support high-volume transaction processing for a cross-gambling loyalty platform.",
+                "**Implemented** CI/CD pipelines (Drone CI) that accelerated the release cycle and improved code quality through automated testing."
+            ]
+        }
+    ],
+    "education": "**Information Security**, Moscow Technological University",
+    "speaking_languages": "**English (Advanced B2-C1)**, Russian (Native), Spanish (Beginner A2), Armenian (Beginner)",
+    "footer_status": "// STATUS: READY_TO_DEPLOY // TETHER_COMPATIBLE // 2026"
+}

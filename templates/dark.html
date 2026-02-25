@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%title%</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-primary: #f0f0f0;
+            --text-secondary: #a0a0a0;
+            --tether-green: #009393;
+            --tether-neon: #00e5e5;
+            --border-color: #333;
+            --spacing-unit: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            /* Readable print size */
+            line-height: 1.5;
+        }
+
+        .a4-page {
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background-color: var(--bg-color);
+            padding: 40px;
+            /* Generous margins */
+            position: relative;
+        }
+
+        /* Subtle Grid for Tech Feel */
+        .a4-page::before {
+            content: " ";
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- Header --- */
+        header {
+            border-bottom: 2px solid var(--tether-green);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-left h1 {
+            font-family: 'JetBrains Mono', monospace;
+            color: #fff;
+            margin: 0 0 5px 0;
+            font-size: 24pt;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .header-left h2 {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--tether-green);
+            margin: 0;
+            font-size: 14pt;
+            font-weight: 500;
+        }
+
+        .header-right {
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9pt;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .header-right a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        /* --- Sections --- */
+        section {
+            margin-bottom: 25px;
+        }
+
+        h3 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12pt;
+            color: var(--tether-neon);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+            margin: 0 0 15px 0;
+            letter-spacing: 1px;
+        }
+
+        /* --- Summary --- */
+        .summary p {
+            margin: 0;
+            color: #d0d0d0;
+            text-align: justify;
+        }
+
+        /* --- Skills --- */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 Columns */
+            gap: 15px;
+        }
+
+        .skill-col h4 {
+            color: var(--tether-green);
+            margin: 0 0 8px 0;
+            font-size: 10pt;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .skill-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 9.5pt;
+            color: #ccc;
+        }
+
+        .skill-list li {
+            margin-bottom: 3px;
+        }
+
+        /* --- Experience --- */
+        .job-item {
+            margin-bottom: 25px;
+            padding-top: 25px;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+
+        .job-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .job-title span {
+            color: var(--tether-green);
+            /* Company Name */
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 400;
+        }
+
+        .job-meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10pt;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        .job-tags {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8pt;
+            margin-top: 5px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .tech-tag {
+            color: var(--tether-neon);
+            background: rgba(0, 229, 229, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .job-desc {
+            margin: 0;
+            padding-left: 15px;
+        }
+
+        .job-desc li {
+            margin-bottom: 6px;
+            color: #d0d0d0;
+            padding-left: 5px;
+            list-style-type: none;
+            /* Custom bullet */
+            position: relative;
+        }
+
+        .job-desc li::before {
+            content: "›";
+            position: absolute;
+            left: -15px;
+            color: var(--tether-green);
+            font-weight: bold;
+        }
+
+        .job-desc strong,
+        .job-desc b,
+        strong,
+        b {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        em,
+        i {
+            color: var(--tether-green);
+            font-style: normal;
+        }
+
+        /* --- Education & Languages --- */
+        .edu-lang-row {
+            display: flex;
+            gap: 40px;
+        }
+
+        .compact-item {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            color: #ccc;
+        }
+
+        .compact-label {
+            color: var(--tether-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9pt;
+            min-width: 120px;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            margin-top: 40px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8pt;
+            color: #444;
+        }
+
+        /* --- Print Optimizations --- */
+        @media print {
+            body {
+                background-color: var(--bg-color);
+                /* Puppeteer handles this */
+            }
+
+            .a4-page {
+                width: 100%;
+                margin: 0;
+                padding: 15mm;
+                border: none;
+            }
+
+            /* Break Control */
+            h3,
+            .skills-grid,
+            li {
+                page-break-inside: avoid;
+            }
+
+            .job-item {
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+                /* Reduced from 20px */
+            }
+
+            .job-desc li {
+                /* Allow list items to break if absolutely necessary, but prefer not */
+                page-break-inside: auto;
+            }
+
+            section {
+                /* Allow sections to split across pages */
+                page-break-inside: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="a4-page">
+        <div class="content">
+            <!-- Header -->
+            <header>
+                <div class="header-left">
+                    <h1>%name%</h1>
+                    <h2>%role%</h2>
+                </div>
+                <div class="header-right">
+                    <div>%email%</div>
+                    <div>%phone%</div>
+                    <div>%location%</div>
+                    <div><a href="%github_link%">%github%</a></div>
+                </div>
+            </header>
+
+            <!-- Summary -->
+            <section class="summary">
+                <h3>Professional Objective</h3>
+                <p>
+                    %professional_objective%
+                </p>
+            </section>
+
+            <!-- Skills (Categorized) -->
+            <section class="skills">
+                <h3>Technical Stack</h3>
+                <div class="skills-grid">
+                    <!-- SECTION: skills -->
+                    <div class="skill-col">
+                        <h4>%category%</h4>
+                        <ul class="skill-list">
+                            <!-- SECTION: items -->
+                            <li>%value%</li>
+                            <!-- END SECTION: items -->
+                        </ul>
+                    </div>
+                    <!-- END SECTION: skills -->
+                </div>
+            </section>
+
+            <!-- Experience -->
+            <section class="experience">
+                <h3>Professional Experience</h3>
+                <!-- SECTION: experience -->
+                <div class="job-item">
+                    <div class="job-header">
+                        <div class="job-title">%title% <span>%company%</span></div>
+                        <div class="job-meta">%period%</div>
+                    </div>
+                    <div class="job-tags">
+                        <!-- SECTION: tags -->
+                        <span class="tech-tag">%value%</span>
+                        <!-- END SECTION: tags -->
+                    </div>
+                    <ul class="job-desc">
+                        <!-- SECTION: description_items -->
+                        <li>%value%</li>
+                        <!-- END SECTION: description_items -->
+                    </ul>
+                </div>
+                <!-- END SECTION: experience -->
+            </section>
+
+            <!-- Education & Languages -->
+            <section class="edu-lang">
+                <h3>Education & Languages</h3>
+
+                <div class="edu-lang-row" style="margin-bottom: 10px;">
+                    <div class="compact-item">
+                        <div class="compact-label">EDUCATION</div>
+                        <div>%education%</div>
+                    </div>
+                </div>
+
+                <div class="edu-lang-row">
+                    <div class="compact-item">
+                        <div class="compact-label">LANGUAGES</div>
+                        <div>%speaking_languages%</div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="footer">
+                %footer_status|// STATUS: READY_TO_DEPLOY // 2026%
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,4 +1,10 @@
-```
-# Build artifacts
-*.html
-```
+node_modules
+.env
+.DS_Store
+*.log
+cv_*.html
+cv_*.pdf
+cvs/*
+full_cv.md
+prompt.md
+cv.json
