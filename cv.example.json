@@ -124,5 +124,6 @@
     ],
     "education": "**Information Security**, Moscow Technological University",
     "speaking_languages": "**English (Advanced B2-C1)**, Russian (Native), Spanish (Beginner A2), Armenian (Beginner)",
-    "footer_status": "// STATUS: READY_TO_DEPLOY // TETHER_COMPATIBLE // 2026"
+    "footer_status": "// STATUS: READY_TO_DEPLOY // TETHER_COMPATIBLE // 2026",
+    "comment_for_user": "In couple of short paragraphs, how to act on screening and interview based on the difference between full CV and generated CV. To make user confident."
 }
