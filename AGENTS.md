@@ -76,7 +76,7 @@ Response:
 
 POST
 
-Set webhook for telegram bot.
+Receives Telegram Update payloads. Register this URL with Telegram once via `setWebhook` (e.g. `POST https://api.telegram.org/bot<token>/setWebhook` with `url=<base>/api/v1/telegram/webhook`).
 
 Body reference: https://core.telegram.org/bots/api
 
@@ -97,15 +97,14 @@ Action:
 - use incoming text as custom_comment
 - send to LLM and recieve cv_data_object
 - build from cv_data_object CV in dark and light templates
-- generate comment about difference between full CV and generated CV and recomendations for reading, how to act on screening and interview
 - send CVs to telegram
 
 ### Outgoing message:
 
 Outgoing message should contain:
 - attachment with CVs in dark and light templates
-- comment about difference between full CV and generated CV and recomendations for reading, how to act on screening and interview
 - recruiter_contact (linkedin profile link) and recruiter_name
+- post text: comment_for_user from cv_data_object
 
 ### Environment variables:
 - TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN

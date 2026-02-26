@@ -303,12 +303,16 @@ async function processTelegramUpdate(update) {
         templates: ['dark', 'light']
     });
 
-    const commentText = await generateTelegramComment({
-        vacancyText: linkedinData.vacancy_text,
-        customComment,
-        fullCv: generation.fullCv,
-        generatedCvJson: generation.generatedJson
-    });
+    let commentText =
+        (generation.generatedJson.comment_for_user && String(generation.generatedJson.comment_for_user).trim()) || '';
+    if (!commentText) {
+        commentText = await generateTelegramComment({
+            vacancyText: linkedinData.vacancy_text,
+            customComment,
+            fullCv: generation.fullCv,
+            generatedCvJson: generation.generatedJson
+        });
+    }
 
     const commentFilename = `${generation.baseName}.comment.md`;
     const commentPath = path.join(CV_DIR, commentFilename);
@@ -388,6 +392,7 @@ async function handleGenerateCvRequest(req, res) {
 app.post('/api/v1/generate-cv', handleGenerateCvRequest);
 app.post('/api/v1/generate_cv', handleGenerateCvRequest);
 
+// Receives Telegram Update; register this URL with Telegram setWebhook API.
 app.post('/api/v1/telegram/webhook', async (req, res) => {
     res.status(200).json({ ok: true });
 
