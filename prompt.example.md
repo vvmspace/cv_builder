@@ -33,6 +33,7 @@ Return a valid JSON object that strictly follows the structure of the provided e
 The "professional_objective" should be a compelling summary tailored to the vacancy.
 Use Markdown for emphasis (e.g. **bold**, *italic*). Do NOT use HTML tags.
 Return a valid JSON object that strictly follows the structure of the provided example JSON.
+If recruiter telegram is provider in post - extract it as link to recruiter_telegram field.
 The "skills" and "experience" arrays should be populated with relevant data.
 Include "comment_for_user": a short note for the candidate on how to act on screening and interview based on the adaptation (what was emphasized, gaps, and practical tips). English only.
 Do not include markdown formatting in the JSON output structure itself (like json code blocks), just the raw JSON object.

@@ -63,7 +63,7 @@ Body:
 - vacancy_text: string
 - custom_comment?: string
 - template?: string = 'dark'
-- model?: string = 'gemini-2.5-flash'
+- model?: string = 'gemini-3.1-pro-preview'
 - full_cv_text?: string // don't use it on frontend
 
 
@@ -92,6 +92,7 @@ Supported links:
 - link to post on LinkedIn: (https://www.linkedin.com/posts/username_some-text-activity-432142314-ObeP?utm...) - extract vacancy text like from linkedin.post.example.html
 
 Action:
+- remove all get parameters from linkedin post link
 - parse vacancy text from linkedin post and use it as vacancy_text
 - parse recruiter contact (linkedin profile link) and name from linkedin post and use it as recruiter_contact and recruiter_name in outgoing message
 - use incoming text as custom_comment

@@ -18,17 +18,25 @@ class GeminiClient extends LLMClient {
     constructor(apiKey) {
         super(apiKey);
         this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
+        this.fallbackChain = [
+            'gemini-3.1-pro-preview',
+            'gemini-2.5-flash',
+            'gemini-2.0-flash'
+        ];
     }
 
     /**
-     * Generates content using the Gemini API.
-     * @param {string} prompt - The prompt to send.
-     * @param {string} model - The model identifier (e.g., 'gemini-2.5-flash').
-     * @param {object} schema - Optional JSON schema for structured output.
-     * @returns {Promise<object>} - The parsed JSON response.
+     * Low-level single-model call. Separated for easier testing/mocking.
+     * Marks rate-limit errors with err.isRateLimit = true.
+     * @param {string} prompt
+     * @param {string} model
+     * @returns {Promise<object>}
+     * @private
      */
-    async generateContent(prompt, model = 'gemini-2.5-flash') {
-        const url = new URL(`${this.baseUrl}/${model}:generateContent`);
+    async _callModel(prompt, model) {
+        const isStreamingOnlyModel = model && model.startsWith('gemini-3.');
+        const method = isStreamingOnlyModel ? 'streamGenerateContent' : 'generateContent';
+        const url = new URL(`${this.baseUrl}/${model}:${method}`);
         url.searchParams.append('key', this.apiKey);
 
         const payload = {
@@ -36,7 +44,8 @@ class GeminiClient extends LLMClient {
                 parts: [{ text: prompt }]
             }],
             generationConfig: {
-                response_mime_type: "application/json"
+                response_mime_type: "application/json",
+                temperature: 0.7
             }
         };
 
@@ -48,27 +57,78 @@ class GeminiClient extends LLMClient {
                 }
             }, (res) => {
                 let data = '';
-                res.on('data', (chunk) => data += chunk);
+                res.on('data', (chunk) => { data += chunk; });
                 res.on('end', () => {
                     try {
-                        const response = JSON.parse(data);
-                        if (response.error) {
-                            reject(new Error(`Gemini API API Error: ${response.error.message}`));
+                        if (res.statusCode === 429) {
+                            const err = new Error('Gemini API rate limit exceeded');
+                            err.isRateLimit = true;
+                            reject(err);
                             return;
                         }
-                        // Extract the text content from the candidate
-                        if (response.candidates && response.candidates[0] && response.candidates[0].content) {
-                            const text = response.candidates[0].content.parts[0].text;
-                            try {
-                                // Try to parse the text as JSON since we requested JSON mime type
-                                resolve(JSON.parse(text));
-                            } catch (e) {
-                                // Fallback if the model returns text that isn't perfect JSON (unlikely with response_mime_type)
-                                // or if we decide to remove response_mime_type later
-                                resolve({ raw_text: text });
+
+                        if (!data) {
+                            reject(new Error('Empty response from Gemini API'));
+                            return;
+                        }
+
+                        // For streaming APIs, the response body is a sequence of JSON
+                        // objects separated by newlines. For non-streaming, it is a single JSON.
+                        const messages = [];
+                        if (isStreamingOnlyModel) {
+                            const lines = data.split('\n').map((l) => l.trim()).filter(Boolean);
+                            for (const line of lines) {
+                                try {
+                                    messages.push(JSON.parse(line));
+                                } catch (e) {
+                                    // Ignore malformed lines; we'll fail later if nothing useful is parsed.
+                                }
                             }
                         } else {
-                            reject(new Error("Unexpected response structure from Gemini API"));
+                            messages.push(JSON.parse(data));
+                        }
+
+                        if (messages.length === 0) {
+                            reject(new Error('Failed to parse streaming response from Gemini API'));
+                            return;
+                        }
+
+                        // Check for API errors on any message.
+                        for (const msg of messages) {
+                            if (msg && msg.error) {
+                                const err = new Error(`Gemini API Error: ${msg.error.message}`);
+                                const code = msg.error.code;
+                                const status = msg.error.status;
+                                if (code === 429 || status === 'RESOURCE_EXHAUSTED') {
+                                    err.isRateLimit = true;
+                                }
+                                reject(err);
+                                return;
+                            }
+                        }
+
+                        // Collect text from all candidate chunks.
+                        let collectedText = '';
+                        for (const msg of messages) {
+                            if (msg.candidates && msg.candidates[0] && msg.candidates[0].content) {
+                                const parts = msg.candidates[0].content.parts || [];
+                                for (const part of parts) {
+                                    if (typeof part.text === 'string') {
+                                        collectedText += part.text;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!collectedText) {
+                            reject(new Error('Unexpected response structure from Gemini API'));
+                            return;
+                        }
+
+                        try {
+                            resolve(JSON.parse(collectedText));
+                        } catch (e) {
+                            resolve({ raw_text: collectedText });
                         }
                     } catch (e) {
                         reject(new Error(`Failed to parse response: ${e.message}`));
@@ -80,6 +140,48 @@ class GeminiClient extends LLMClient {
             req.write(JSON.stringify(payload));
             req.end();
         });
+    }
+
+    /**
+     * Generates content using the Gemini API with fallback queue in case of limits.
+     * Fallback order (unless overridden by model parameter):
+     *   gemini-3.1-pro-preview -> gemini-2.5-flash -> gemini-2.0-flash
+     * @param {string} prompt
+     * @param {string} model
+     * @returns {Promise<object>}
+     */
+    async generateContent(prompt, model = 'gemini-3.1-pro-preview') {
+        const chain = [...this.fallbackChain];
+
+        let modelsToTry;
+        if (model && chain.includes(model)) {
+            const startIdx = chain.indexOf(model);
+            modelsToTry = [...chain.slice(startIdx), ...chain.slice(0, startIdx)];
+        } else if (model) {
+            modelsToTry = [model, ...chain.filter((m) => m !== model)];
+        } else {
+            modelsToTry = chain;
+        }
+
+        let lastError;
+        for (let i = 0; i < modelsToTry.length; i += 1) {
+            const currentModel = modelsToTry[i];
+            try {
+                if (currentModel !== model) {
+                    // eslint-disable-next-line no-console
+                    console.warn(`Falling back to model ${currentModel} due to rate limits or errors on previous model.`);
+                }
+                // eslint-disable-next-line no-await-in-loop
+                return await this._callModel(prompt, currentModel);
+            } catch (err) {
+                lastError = err;
+                if (!err.isRateLimit || i === modelsToTry.length - 1) {
+                    break;
+                }
+            }
+        }
+
+        throw lastError || new Error('Failed to generate content with Gemini models');
     }
 }
 

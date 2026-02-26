@@ -6,7 +6,7 @@ const cheerio = require('cheerio');
 const { Telegram } = require('telegraf');
 const { GeminiClient } = require('./tools/llm_client');
 const { render } = require('./tools/template_renderer');
-const { launchBrowser } = require('./runtime');
+const { launchBrowser, isNetlifyRuntime } = require('./runtime');
 require('dotenv').config();
 
 const app = express();
@@ -14,7 +14,9 @@ const app = express();
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(express.static('public'));
 
-const CV_DIR = path.join(__dirname, 'cvs');
+const CV_DIR = isNetlifyRuntime()
+    ? path.join('/tmp', 'cvs')
+    : path.join(__dirname, 'cvs');
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 fs.mkdirSync(CV_DIR, { recursive: true });
@@ -120,7 +122,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
     return artifacts;
 }
 
-async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini-2.5-flash', templates = ['dark'], fullCvText }) {
+async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini-3.1-pro-preview', templates = ['dark'], fullCvText }) {
     const assets = getGenerationAssets(fullCvText);
     const prompt = buildCvPrompt({
         vacancyText,
@@ -143,7 +145,7 @@ async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini
     };
 }
 
-async function generateTelegramComment({ vacancyText, customComment, fullCv, generatedCvJson, model = 'gemini-2.5-flash' }) {
+async function generateTelegramComment({ vacancyText, customComment, fullCv, generatedCvJson, model = 'gemini-3.1-pro-preview' }) {
     const prompt = `You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
 
     const response = await llmClient.generateContent(prompt, model);
@@ -224,11 +226,24 @@ function parseLinkedInPostHtml(html, sourceUrl) {
         || $('meta[property="og:description"]').attr('content')
         || '';
 
+    const ogImage = $('meta[property="og:image"]').attr('content') || null;
+
     const author = socialPost && socialPost.author && typeof socialPost.author === 'object' ? socialPost.author : {};
     const recruiterName = author.name
         || $('meta[property="og:title"]').attr('content')?.split('|').pop()?.trim()
         || null;
     const recruiterContact = author.url || null;
+
+    let recruiterAvatarUrl = null;
+    if (author.image) {
+        if (typeof author.image === 'string') {
+            recruiterAvatarUrl = author.image;
+        } else if (Array.isArray(author.image) && author.image.length > 0) {
+            recruiterAvatarUrl = author.image[0].url || author.image[0];
+        } else if (typeof author.image === 'object' && author.image.url) {
+            recruiterAvatarUrl = author.image.url;
+        }
+    }
 
     if (!vacancyText.trim()) {
         throw new Error('Failed to extract vacancy text from LinkedIn post HTML');
@@ -238,7 +253,9 @@ function parseLinkedInPostHtml(html, sourceUrl) {
         vacancy_text: vacancyText.trim(),
         recruiter_name: recruiterName,
         recruiter_contact: recruiterContact,
-        post_link: canonicalUrl
+        post_link: canonicalUrl,
+        post_image_url: ogImage,
+        recruiter_avatar_url: recruiterAvatarUrl
     };
 }
 
@@ -253,7 +270,6 @@ function getTelegramMessageFromUpdate(update) {
 
 function buildTelegramSummaryMessage({ recruiterName, recruiterContact, postLink, commentText }) {
     const lines = [];
-    lines.push('Generated CVs (dark + light).');
     if (recruiterName) lines.push(`Recruiter: ${recruiterName}`);
     if (recruiterContact) lines.push(`Recruiter contact: ${recruiterContact}`);
     if (postLink) lines.push(`Post link: ${postLink}`);
@@ -266,7 +282,7 @@ async function sendTelegramTextInChunks(telegram, chatId, text) {
     const maxLen = 3800;
     for (let i = 0; i < text.length; i += maxLen) {
         const chunk = text.slice(i, i + maxLen);
-        await telegram.sendMessage(chatId, chunk);
+        await telegram.sendMessage(chatId, chunk, { parse_mode: 'Markdown' });
     }
 }
 
@@ -285,20 +301,30 @@ async function processTelegramUpdate(update) {
     const incomingText = message.text || message.caption || '';
     const urls = extractUrls(incomingText);
     const linkedinUrl = pickLinkedInPostUrl(urls);
-    const customComment = stripUrls(incomingText);
+    const textWithoutUrls = stripUrls(incomingText);
     const telegram = new Telegram(telegramToken);
 
-    if (!linkedinUrl) {
-        await telegram.sendMessage(chatId, 'Send a LinkedIn post link with optional comment in the same message.');
-        return;
+    let vacancyText;
+    let linkedinData = null;
+    let customComment = '';
+
+    if (linkedinUrl) {
+        linkedinData = await fetchAndParseLinkedInPost(linkedinUrl);
+        if (textWithoutUrls) {
+            vacancyText = `${textWithoutUrls}\n\n${linkedinData.vacancy_text}`;
+        } else {
+            vacancyText = linkedinData.vacancy_text;
+        }
+    } else {
+        if (!textWithoutUrls) {
+            await telegram.sendMessage(chatId, 'Send a LinkedIn post link or paste vacancy text in the same message.');
+            return;
+        }
+        vacancyText = textWithoutUrls;
     }
 
-    await telegram.sendMessage(chatId, 'Processing LinkedIn post and generating CVs (dark + light)...');
-
-    const linkedinData = await fetchAndParseLinkedInPost(linkedinUrl);
-
     const generation = await generateCvArtifacts({
-        vacancyText: linkedinData.vacancy_text,
+        vacancyText,
         customComment,
         templates: ['dark', 'light']
     });
@@ -321,28 +347,52 @@ async function processTelegramUpdate(update) {
     const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
     const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
 
-    if (darkArtifact) {
-        await telegram.sendDocument(chatId, {
-            source: darkArtifact.pdf_path,
-            filename: darkArtifact.pdf_filename
-        });
-    }
-
-    if (lightArtifact) {
-        await telegram.sendDocument(chatId, {
-            source: lightArtifact.pdf_path,
-            filename: lightArtifact.pdf_filename
-        });
-    }
-
     const summary = buildTelegramSummaryMessage({
-        recruiterName: linkedinData.recruiter_name,
-        recruiterContact: linkedinData.recruiter_contact,
-        postLink: linkedinData.post_link,
+        recruiterName: linkedinData?.recruiter_name || null,
+        recruiterContact: linkedinData?.recruiter_contact || null,
+        postLink: linkedinData?.post_link || null,
         commentText
     });
 
-    await sendTelegramTextInChunks(telegram, chatId, summary);
+    const media = [];
+
+    const MAX_CAPTION_LENGTH = 1000;
+    const caption = summary.length > MAX_CAPTION_LENGTH ? summary.slice(0, MAX_CAPTION_LENGTH) : summary;
+
+    if (darkArtifact) {
+        media.push(
+            {
+                type: 'document',
+                media: {
+                    source: darkArtifact.pdf_path,
+                    filename: darkArtifact.pdf_filename
+                },
+                caption
+            }
+        );
+    }
+
+    if (lightArtifact) {
+        media.push(
+            {
+                type: 'document',
+                media: {
+                    source: lightArtifact.pdf_path,
+                    filename: lightArtifact.pdf_filename
+                }
+            }
+        );
+    }
+
+    if (media.length > 0) {
+        await telegram.sendMediaGroup(chatId, media);
+        if (summary.length > MAX_CAPTION_LENGTH) {
+            const remaining = summary.slice(MAX_CAPTION_LENGTH);
+            await sendTelegramTextInChunks(telegram, chatId, remaining.trimStart());
+        }
+    } else {
+        await sendTelegramTextInChunks(telegram, chatId, summary);
+    }
 }
 
 // Initialize Gemini Client
@@ -358,7 +408,7 @@ async function handleGenerateCvRequest(req, res) {
         const {
             vacancy_text,
             custom_comment,
-            model = 'gemini-2.5-flash',
+            model = 'gemini-3.1-pro-preview',
             template = 'dark',
             full_cv_text
         } = req.body;

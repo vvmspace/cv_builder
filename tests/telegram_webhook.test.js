@@ -22,8 +22,7 @@ function createEvent({ method, path, body, headers = {} }) {
 test('telegram webhook returns 200 and ok true for minimal Update', async () => {
     const update = {
         message: {
-            chat: { id: 123 },
-            text: 'hello'
+            chat: { id: 123 }
         }
     };
 

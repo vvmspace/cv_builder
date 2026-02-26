@@ -9,7 +9,10 @@ function isNetlifyRuntime() {
 
 async function launchBrowser() {
     if (!isNetlifyRuntime()) {
-        return puppeteer.launch({ headless: 'new' });
+        return puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
     }
 
     const executablePath = await chromium.executablePath();
