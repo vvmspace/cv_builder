@@ -1,7 +1,9 @@
 {
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start:mock": "MOCK_LLM=true MOCK_TELEGRAM=true node server.js",
+    "dev": "node --watch server.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -14,5 +16,8 @@
     "puppeteer-core": "^24.37.5",
     "serverless-http": "^4.0.0",
     "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

@@ -180,7 +180,7 @@
             statusDiv.innerHTML = '<span class="loader"></span>Adapting CV... This may take up to 30 seconds.';
 
             try {
-                const response = await fetch('/api/generate-cv', {
+                const response = await fetch('/api/v1/generate-cv', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 

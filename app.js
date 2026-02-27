@@ -288,7 +288,7 @@ async function sendTelegramTextInChunks(telegram, chatId, text) {
 
 async function processTelegramUpdate(update) {
     const telegramToken = process.env.TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN;
-    if (!telegramToken) {
+    if (!telegramToken && process.env.MOCK_TELEGRAM !== 'true') {
         throw new Error('TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN is not configured');
     }
 
@@ -302,7 +302,14 @@ async function processTelegramUpdate(update) {
     const urls = extractUrls(incomingText);
     const linkedinUrl = pickLinkedInPostUrl(urls);
     const textWithoutUrls = stripUrls(incomingText);
-    const telegram = new Telegram(telegramToken);
+
+    class MockTelegram {
+        async sendMessage(chat, text, opts) { console.log(`[MockTelegram] sendMessage to ${chat}`); }
+        async sendMediaGroup(chat, media) { console.log(`[MockTelegram] sendMediaGroup to ${chat}`); }
+    }
+    const telegram = process.env.MOCK_TELEGRAM === 'true'
+        ? new MockTelegram()
+        : new Telegram(telegramToken);
 
     let vacancyText;
     let linkedinData = null;
@@ -397,11 +404,25 @@ async function processTelegramUpdate(update) {
 
 // Initialize Gemini Client
 const geminiApiKey = process.env.GEMINI_API_KEY;
-if (!geminiApiKey) {
+if (!geminiApiKey && process.env.MOCK_LLM !== 'true') {
     console.error('Error: GEMINI_API_KEY not found in environment variables.');
     process.exit(1);
 }
-const llmClient = new GeminiClient(geminiApiKey);
+
+const llmClient = process.env.MOCK_LLM === 'true'
+    ? {
+        generateContent: async (prompt, model) => {
+            if (prompt.includes('Compare FULL CV vs GENERATED CV')) {
+                return { comment_markdown: 'Mock Telegram Comment' };
+            }
+            return {
+                "name": "Mock Name",
+                "experience": ["Mock Experience"],
+                "comment_for_user": "Mock comment for user"
+            };
+        }
+    }
+    : new GeminiClient(geminiApiKey);
 
 async function handleGenerateCvRequest(req, res) {
     try {
@@ -455,6 +476,8 @@ app.post('/api/v1/telegram/webhook', async (req, res) => {
             if (chatId && token) {
                 const telegram = new Telegram(token);
                 await telegram.sendMessage(chatId, `Failed to process request: ${error.message}`);
+            } else if (chatId && process.env.MOCK_TELEGRAM === 'true') {
+                console.log(`[MockTelegram] Failed to process request: ${error.message}`);
             }
         } catch (notifyError) {
             console.error('Failed to notify telegram chat about error:', notifyError);
