@@ -185,4 +185,85 @@ class GeminiClient extends LLMClient {
     }
 }
 
-module.exports = { GeminiClient };
+class OpenRouterClient extends LLMClient {
+    constructor(apiKey) {
+        super(apiKey);
+        this.baseUrl = "https://openrouter.ai/api/v1/chat/completions";
+    }
+
+    async generateContent(prompt, model = 'openrouter/free') {
+        const payload = {
+            model: model,
+            messages: [{ role: 'user', content: prompt }]
+        };
+
+        return new Promise((resolve, reject) => {
+            const url = new URL(this.baseUrl);
+            const req = https.request(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'HTTP-Referer': 'https://cvbuilder.local',
+                    'X-Title': 'CV Builder',
+                    'Content-Type': 'application/json'
+                }
+            }, (res) => {
+                let data = '';
+                res.on('data', (chunk) => { data += chunk; });
+                res.on('end', () => {
+                    try {
+                        if (res.statusCode !== 200) {
+                            reject(new Error(`OpenRouter API error: ${res.statusCode} ${data}`));
+                            return;
+                        }
+
+                        const response = JSON.parse(data);
+                        if (!response.choices || response.choices.length === 0) {
+                            reject(new Error('Empty response from OpenRouter API'));
+                            return;
+                        }
+
+                        const text = response.choices[0].message.content;
+                        try {
+                            let jsonStr = text;
+                            const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                            if (match) {
+                                jsonStr = match[1];
+                            }
+                            resolve(JSON.parse(jsonStr));
+                        } catch (e) {
+                            resolve({ raw_text: text });
+                        }
+                    } catch (e) {
+                        reject(new Error(`Failed to parse OpenRouter response: ${e.message}`));
+                    }
+                });
+            });
+
+            req.on('error', (e) => reject(e));
+            req.write(JSON.stringify(payload));
+            req.end();
+        });
+    }
+}
+
+class UnifiedLLMClient extends LLMClient {
+    constructor(geminiKey, openRouterKey) {
+        super("unified");
+        this.geminiClient = geminiKey ? new GeminiClient(geminiKey) : null;
+        this.openRouterClient = openRouterKey ? new OpenRouterClient(openRouterKey) : null;
+    }
+
+    async generateContent(prompt, model) {
+        const isGemini = !model || model.startsWith('gemini');
+        if (isGemini) {
+            if (!this.geminiClient) throw new Error('Gemini API key not configured');
+            return this.geminiClient.generateContent(prompt, model);
+        } else {
+            if (!this.openRouterClient) throw new Error('OpenRouter API key not configured');
+            return this.openRouterClient.generateContent(prompt, model);
+        }
+    }
+}
+
+module.exports = { GeminiClient, OpenRouterClient, UnifiedLLMClient };

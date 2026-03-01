@@ -141,6 +141,13 @@
                 <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="arcee-ai/trinity-large-preview:free">Arcee Trinity Large (OR)</option>
+                <option value="arcee-ai/trinity-mini:free">Arcee Trinity Mini (OR)</option>
+                <option value="nvidia/llama-nemotron-embed-vl-1b-v2:free">Nvidia Llama Nemotron Embed VL 1b (OR)
+                </option>
+                <option value="cognitivecomputations/dolphin-mistral-24b-venice-edition:free">Dolphin Mistral 24B Venice
+                    (OR)</option>
+                <option value="openrouter/free">OpenRouter Free Auto (OR)</option>
             </select>
             <button id="generateBtn" onclick="generateCV()">Generate PDF</button>
         </div>
@@ -183,11 +190,11 @@
                 const response = await fetch('/api/v1/generate-cv', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        vacancy_text: vacancyText, 
+                    body: JSON.stringify({
+                        vacancy_text: vacancyText,
                         custom_comment: customComment,
-                        model: model, 
-                        template: template 
+                        model: model,
+                        template: template
                     })
                 });
 

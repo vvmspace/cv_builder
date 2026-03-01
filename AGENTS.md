@@ -113,3 +113,4 @@ Outgoing message should contain:
 ## Frontend
 
 - The most simple frontend is in public/index.html
+- Everytime when you update models, update list on frontend

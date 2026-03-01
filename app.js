@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
 const { Telegram } = require('telegraf');
-const { GeminiClient } = require('./tools/llm_client');
+const { UnifiedLLMClient } = require('./tools/llm_client');
 const { render } = require('./tools/template_renderer');
 const { launchBrowser, isNetlifyRuntime } = require('./runtime');
 require('dotenv').config();
@@ -402,10 +402,11 @@ async function processTelegramUpdate(update) {
     }
 }
 
-// Initialize Gemini Client
+// Initialize LLM Client
 const geminiApiKey = process.env.GEMINI_API_KEY;
-if (!geminiApiKey && process.env.MOCK_LLM !== 'true') {
-    console.error('Error: GEMINI_API_KEY not found in environment variables.');
+const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+if (!geminiApiKey && !openRouterApiKey && process.env.MOCK_LLM !== 'true') {
+    console.error('Error: Neither GEMINI_API_KEY nor OPENROUTER_API_KEY found in environment variables.');
     process.exit(1);
 }
 
@@ -422,7 +423,7 @@ const llmClient = process.env.MOCK_LLM === 'true'
             };
         }
     }
-    : new GeminiClient(geminiApiKey);
+    : new UnifiedLLMClient(geminiApiKey, openRouterApiKey);
 
 async function handleGenerateCvRequest(req, res) {
     try {
