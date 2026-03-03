@@ -82,3 +82,20 @@ The server will return the actual URLs and absolute paths to the generated HTML 
   "pdf_absolute_path": "/Users/.../cv_builder/cvs/cv_17...pdf"
 }
 ```
+
+After each successful `POST /api/v1/generate-cv` (or `/api/v1/generate_cv`) request, the server also stores the latest generated CV JSON to:
+- local/dev: `./last.json`
+- Netlify/Lambda runtime: `/tmp/last.json`
+
+### Build PDF from Ready JSON (CLI)
+
+If you already have a CV JSON (for example, `last.json`) and only need to render PDF/HTML:
+
+```bash
+npm run build:pdf-from-json -- ./last.json ./cvs/manual_dark.pdf dark
+```
+
+Arguments:
+- `input_json_file` (required): path to CV JSON.
+- `output_pdf_file` (optional): output PDF path. If omitted, files are created in `./cvs`.
+- `template` (optional): `dark` (default) or `light`.

@@ -3,6 +3,7 @@
     "start": "node server.js",
     "start:mock": "MOCK_LLM=true MOCK_TELEGRAM=true node server.js",
     "dev": "node --watch server.js",
+    "json": "node tools/build_pdf_from_json.js",
     "test:e2e": "playwright test"
   },
   "dependencies": {

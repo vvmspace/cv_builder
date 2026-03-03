@@ -41,6 +41,32 @@
             gap: 1rem;
         }
 
+        .field-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .field-header {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .restore-btn {
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         textarea {
             width: 100%;
             height: 300px;
@@ -127,9 +153,19 @@
     <h1>CV Adapt // VVM</h1>
 
     <div class="container">
-        <textarea id="vacancyInput" placeholder="// PASTE JOB DESCRIPTION HERE..." style="height: 200px;"></textarea>
-        <textarea id="customCommentInput" placeholder="// ENTER CUSTOM INSTRUCTIONS HERE (OPTIONAL)..."
-            style="height: 100px;"></textarea>
+        <div class="field-block">
+            <div class="field-header">
+                <button class="restore-btn" type="button" onclick="restoreField('vacancyInput')" title="Restore from localStorage">&#8634;</button>
+            </div>
+            <textarea id="vacancyInput" placeholder="// PASTE JOB DESCRIPTION HERE..." style="height: 200px;"></textarea>
+        </div>
+        <div class="field-block">
+            <div class="field-header">
+                <button class="restore-btn" type="button" onclick="restoreField('customCommentInput')" title="Restore from localStorage">&#8634;</button>
+            </div>
+            <textarea id="customCommentInput" placeholder="// ENTER CUSTOM INSTRUCTIONS HERE (OPTIONAL)..."
+                style="height: 100px;"></textarea>
+        </div>
 
         <div class="controls">
             <select id="templateSelect">
@@ -169,6 +205,47 @@
     </div>
 
     <script>
+        const STORAGE_KEYS = {
+            vacancyInput: 'cv_builder.vacancy_text',
+            customCommentInput: 'cv_builder.custom_comment',
+            templateSelect: 'cv_builder.template',
+            modelSelect: 'cv_builder.model'
+        };
+
+        function persistFieldValue(fieldId) {
+            const key = STORAGE_KEYS[fieldId];
+            const el = document.getElementById(fieldId);
+            if (!key || !el) return;
+            localStorage.setItem(key, el.value);
+        }
+
+        function restoreField(fieldId) {
+            const key = STORAGE_KEYS[fieldId];
+            const el = document.getElementById(fieldId);
+            if (!key || !el) return;
+            const savedValue = localStorage.getItem(key);
+            if (savedValue !== null) {
+                el.value = savedValue;
+            }
+        }
+
+        function bindStorageSync() {
+            Object.keys(STORAGE_KEYS).forEach((fieldId) => {
+                const el = document.getElementById(fieldId);
+                if (!el) return;
+                const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventName, () => persistFieldValue(fieldId));
+            });
+        }
+
+        function restorePersistentSelects() {
+            restoreField('templateSelect');
+            restoreField('modelSelect');
+        }
+
+        restorePersistentSelects();
+        bindStorageSync();
+
         async function generateCV() {
             const vacancyText = document.getElementById('vacancyInput').value.trim();
             const customComment = document.getElementById('customCommentInput').value.trim();

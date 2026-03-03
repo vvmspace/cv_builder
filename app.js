@@ -17,6 +17,9 @@ app.use(express.static('public'));
 const CV_DIR = isNetlifyRuntime()
     ? path.join('/tmp', 'cvs')
     : path.join(__dirname, 'cvs');
+const LAST_JSON_PATH = isNetlifyRuntime()
+    ? path.join('/tmp', 'last.json')
+    : path.join(__dirname, 'last.json');
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 fs.mkdirSync(CV_DIR, { recursive: true });
@@ -134,7 +137,7 @@ async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini
 
     console.log(`Calling LLM for templates [${templates.join(', ')}] using model ${model}...`);
     const generatedJson = normalizeGeneratedCvJson(await llmClient.generateContent(prompt, model));
-    const baseName = `cv_${Date.now()}`;
+    const baseName = `${generatedJson.cv_filename_prefix || 'cv'}_${Date.now()}`;
     const artifacts = await renderAndGeneratePdfs({ generatedJson, templates, baseName });
 
     return {
@@ -146,7 +149,7 @@ async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini
 }
 
 async function generateTelegramComment({ vacancyText, customComment, fullCv, generatedCvJson, model = 'gemini-3.1-pro-preview' }) {
-    const prompt = `You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
+    const prompt = `${generatedJson.cv_filename_prefix} You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
 
     const response = await llmClient.generateContent(prompt, model);
 
@@ -448,6 +451,7 @@ async function handleGenerateCvRequest(req, res) {
         });
 
         const artifact = generation.artifacts[0];
+        fs.writeFileSync(LAST_JSON_PATH, JSON.stringify(generation.generatedJson, null, 2));
 
         res.json({
             success: true,
