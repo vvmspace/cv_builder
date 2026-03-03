@@ -2,11 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const cheerio = require('cheerio');
+const swaggerUi = require('swagger-ui-express');
 const { Telegram } = require('telegraf');
 const { UnifiedLLMClient } = require('./tools/llm_client');
 const { render } = require('./tools/template_renderer');
 const { launchBrowser, isNetlifyRuntime } = require('./runtime');
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -23,6 +26,98 @@ const LAST_JSON_PATH = isNetlifyRuntime()
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
 
 fs.mkdirSync(CV_DIR, { recursive: true });
+
+let mongoClientPromise = null;
+
+async function getVacanciesCollection() {
+    const connectionString = process.env.MONGODB_CONNECTION_STRING;
+    if (!connectionString) {
+        return null;
+    }
+
+    if (!mongoClientPromise) {
+        mongoClientPromise = MongoClient.connect(connectionString).catch((error) => {
+            mongoClientPromise = null;
+            throw error;
+        });
+    }
+
+    const client = await mongoClientPromise;
+    return client.db('vacancies').collection('vacancies');
+}
+
+async function createVacancy({
+    vacancy_text,
+    post_link,
+    recruiter_name,
+    recruiter_contact,
+    status = 'created'
+}) {
+    const collection = await getVacanciesCollection();
+    if (!collection) {
+        return null;
+    }
+
+    const now = new Date();
+    const uuid = crypto.randomUUID();
+
+    const doc = {
+        uuid,
+        vacancy_text: vacancy_text || null,
+        post_link: post_link || null,
+        recruiter_name: recruiter_name || null,
+        recruiter_contact: recruiter_contact || null,
+        file_name: null,
+        position_title: null,
+        recruiter_telegram: null,
+        comment_text: null,
+        greeting_message: null,
+        status: status || 'created',
+        created_at: now,
+        updated_at: now
+    };
+
+    await collection.insertOne(doc);
+    return doc;
+}
+
+async function updateVacancy(post_link, {
+    file_name,
+    position_title,
+    recruiter_telegram,
+    comment_text,
+    greeting_message,
+    status = 'generated'
+}) {
+    const collection = await getVacanciesCollection();
+    if (!collection) {
+        return;
+    }
+
+    const now = new Date();
+
+    await collection.findOneAndUpdate(
+        { post_link: post_link || null },
+        {
+            $set: {
+                file_name: file_name || null,
+                position_title: position_title || null,
+                recruiter_telegram: recruiter_telegram || null,
+                comment_text: comment_text || null,
+                greeting_message: greeting_message || null,
+                status: status || 'generated',
+                updated_at: now
+            }
+        },
+        {
+            sort: { created_at: -1 }
+        }
+    );
+}
+
+async function saveVacancy(args) {
+    return updateVacancy(args?.post_link || null, args || {});
+}
 
 function getFallbackPath(preferredName, fallbackName) {
     const preferredPath = path.join(__dirname, preferredName);
@@ -149,7 +244,10 @@ async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini
 }
 
 async function generateTelegramComment({ vacancyText, customComment, fullCv, generatedCvJson, model = 'gemini-3.1-pro-preview' }) {
-    const prompt = `${generatedJson.cv_filename_prefix} You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
+    const prefix = generatedCvJson && generatedCvJson.cv_filename_prefix
+        ? generatedCvJson.cv_filename_prefix
+        : 'CV';
+    const prompt = `${prefix} You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
 
     const response = await llmClient.generateContent(prompt, model);
 
@@ -316,7 +414,7 @@ async function processTelegramUpdate(update) {
 
     let vacancyText;
     let linkedinData = null;
-    let customComment = '';
+    const customComment = stripUrls(incomingText);
 
     if (linkedinUrl) {
         linkedinData = await fetchAndParseLinkedInPost(linkedinUrl);
@@ -333,6 +431,18 @@ async function processTelegramUpdate(update) {
         vacancyText = textWithoutUrls;
     }
 
+    try {
+        await createVacancy({
+            vacancy_text: vacancyText,
+            post_link: linkedinData?.post_link || linkedinUrl || null,
+            recruiter_name: linkedinData?.recruiter_name || null,
+            recruiter_contact: linkedinData?.recruiter_contact || null,
+            status: 'created'
+        });
+    } catch (error) {
+        console.error('Failed to create vacancy in MongoDB:', error);
+    }
+
     const generation = await generateCvArtifacts({
         vacancyText,
         customComment,
@@ -342,8 +452,9 @@ async function processTelegramUpdate(update) {
     let commentText =
         (generation.generatedJson.comment_for_user && String(generation.generatedJson.comment_for_user).trim()) || '';
     if (!commentText) {
+        const vacancyTextForComment = linkedinData?.vacancy_text || vacancyText;
         commentText = await generateTelegramComment({
-            vacancyText: linkedinData.vacancy_text,
+            vacancyText: vacancyTextForComment,
             customComment,
             fullCv: generation.fullCv,
             generatedCvJson: generation.generatedJson
@@ -363,6 +474,26 @@ async function processTelegramUpdate(update) {
         postLink: linkedinData?.post_link || null,
         commentText
     });
+
+    try {
+        const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0] || null;
+        if (primaryArtifact) {
+            await updateVacancy(linkedinData?.post_link || linkedinUrl || null, {
+                file_name: primaryArtifact.pdf_filename,
+                position_title:
+                    generation.generatedJson.role_original
+                    || generation.generatedJson.role
+                    || generation.generatedJson.position_title
+                    || null,
+                recruiter_telegram: generation.generatedJson.recruiter_telegram || null,
+                comment_text: commentText,
+                greeting_message: generation.generatedJson.greeting_message || null,
+                status: 'generated'
+            });
+        }
+    } catch (error) {
+        console.error('Failed to update vacancy in MongoDB:', error);
+    }
 
     const media = [];
 
@@ -392,6 +523,14 @@ async function processTelegramUpdate(update) {
                 }
             }
         );
+    }
+
+    const greetingMessage =
+        generation.generatedJson.greeting_message &&
+        String(generation.generatedJson.greeting_message).trim();
+
+    if (greetingMessage) {
+        await telegram.sendMessage(chatId, greetingMessage);
     }
 
     if (media.length > 0) {
@@ -490,6 +629,216 @@ app.post('/api/v1/telegram/webhook', async (req, res) => {
     });
 });
 
+app.get('/api/v1/vacancies', async (req, res) => {
+    try {
+        const collection = await getVacanciesCollection();
+        if (!collection) {
+            return res.json({ vacancies: [] });
+        }
+
+        const vacancies = await collection.find({}).toArray();
+
+        vacancies.sort((a, b) => {
+            const aGenerated = a.status === 'generated';
+            const bGenerated = b.status === 'generated';
+            if (aGenerated !== bGenerated) {
+                return aGenerated ? -1 : 1;
+            }
+
+            const aTime = (a.updated_at || a.created_at || new Date(0)).getTime();
+            const bTime = (b.updated_at || b.created_at || new Date(0)).getTime();
+            return aTime - bTime;
+        });
+
+        res.json({ vacancies });
+    } catch (error) {
+        console.error('Failed to fetch vacancies:', error);
+        res.status(500).json({ error: 'Failed to fetch vacancies' });
+    }
+});
+
+app.patch('/api/v1/vacancies/:uuid', async (req, res) => {
+    const { uuid } = req.params;
+    const { status, comment } = req.body || {};
+
+    const authToken = process.env.AUTH_TOKEN;
+    if (authToken) {
+        const authHeader = req.get('authorization') || '';
+        const expected = `Bearer ${authToken}`;
+        if (authHeader !== expected) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+    }
+
+    try {
+        const collection = await getVacanciesCollection();
+        if (!collection) {
+            return res.json({ success: true });
+        }
+
+        const update = {
+            updated_at: new Date()
+        };
+
+        if (typeof status === 'string') {
+            update.status = status;
+        }
+        if (typeof comment === 'string') {
+            update.comment_text = comment;
+        }
+
+        await collection.updateOne(
+            { uuid },
+            {
+                $set: update
+            }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to update vacancy:', error);
+        res.status(500).json({ error: 'Failed to update vacancy' });
+    }
+});
+
+const openApiSpec = {
+    openapi: '3.0.0',
+    info: {
+        title: 'CV AI Adapter API',
+        version: '1.0.0'
+    },
+    paths: {
+        '/api/v1/generate_cv': {
+            post: {
+                summary: 'Generate CV',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    vacancy_text: { type: 'string' },
+                                    custom_comment: { type: 'string' },
+                                    template: { type: 'string', enum: ['dark', 'light'], default: 'dark' },
+                                    model: { type: 'string', default: 'gemini-3.1-pro-preview' },
+                                    full_cv_text: { type: 'string' }
+                                },
+                                required: ['vacancy_text']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description: 'CV generated',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean' },
+                                        html_url: { type: 'string' },
+                                        pdf_url: { type: 'string' },
+                                        pdf_absolute_path: { type: 'string' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    400: {
+                        description: 'Bad request'
+                    }
+                }
+            }
+        },
+        '/api/v1/telegram/webhook': {
+            post: {
+                summary: 'Telegram webhook',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object'
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description: 'Accepted'
+                    }
+                }
+            }
+        },
+        '/api/v1/vacancies': {
+            get: {
+                summary: 'Get vacancies',
+                responses: {
+                    200: {
+                        description: 'List of vacancies',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        vacancies: {
+                                            type: 'array',
+                                            items: { type: 'object' }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/v1/vacancies/{uuid}': {
+            patch: {
+                summary: 'Update vacancy',
+                parameters: [
+                    {
+                        name: 'uuid',
+                        in: 'path',
+                        required: true,
+                        schema: { type: 'string' }
+                    }
+                ],
+                requestBody: {
+                    required: false,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    status: { type: 'string' },
+                                    comment: { type: 'string' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: {
+                        description: 'Updated'
+                    },
+                    401: {
+                        description: 'Unauthorized'
+                    }
+                }
+            }
+        }
+    }
+};
+
+app.get('/api/v1/docs.json', (req, res) => {
+    res.json(openApiSpec);
+});
+
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
+
 // Serve static files for verification if needed
 app.use('/cvs', express.static(CV_DIR));
 
@@ -501,5 +850,9 @@ module.exports = {
     extractUrls,
     pickLinkedInPostUrl,
     stripUrls,
-    buildTelegramSummaryMessage
+    buildTelegramSummaryMessage,
+    saveVacancy,
+    getVacanciesCollection,
+    createVacancy,
+    updateVacancy
 };

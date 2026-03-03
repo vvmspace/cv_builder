@@ -2,6 +2,7 @@
     "title": "Name From Fullcv - Position fits this job or from CV if not provided",
     "name": "Name From Fullcv",
     "role": "Position for this job",
+    "role_original": "Position extracted from vacancy text (not for generation, just for reference)",
     "email": "Email from Fullcv",
     "phone": "Phone from Fullcv",
     "location": "Location from Fullcv",
@@ -127,5 +128,6 @@
     "footer_status": "// STATUS: READY_TO_DEPLOY // TETHER_COMPATIBLE // 2026",
     "comment_for_user": "In couple of short paragraphs, how to act on screening and interview based on the difference between full CV and generated CV. To make user confident.",
     "recruiter_telegram": "optional: recruiter's telegram profile link if provided in vacancy text",
-    "cv_filename_prefix": "We use cv_filename_prefix_TIMESTAMP.pdf for filenames. Please provide suggestion."
+    "cv_filename_prefix": "We use cv_filename_prefix_TIMESTAMP.pdf for filenames. Please provide suggestion.",
+    "greeting_message": "2-3 sentence to greet recruiter like 'Hello, happy to connect! I seen you post about ... Attached my CV "
 }

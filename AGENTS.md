@@ -50,6 +50,8 @@
 
 ## API
 
+API should has swagger with interface to be able to click endpoints from there.
+
 ### /api/v1/generate_cv
 
 POST
@@ -80,6 +82,28 @@ Receives Telegram Update payloads. Register this URL with Telegram once via `set
 
 Body reference: https://core.telegram.org/bots/api
 
+### GET /api/v1/vacancies
+
+Get vacancies list
+
+Response:
+- vacancies: array of vacancies
+
+Order by updated_at asc and status: 'generated' should be first.
+
+### PATCH /api/v1/vacancies/:uuid
+
+If AUTH_TOKEN environment variable is set, check it in header Authorization: Bearer <token>, if it doesn't match, return 401.
+If AUTH_TOKEN is not set, update without checking.
+
+Update vacancy by uuid with partial update and set updated_at to current time
+
+Body:
+- status?: string
+- comment?: string
+
+If there are no status and no comment, just update updated_at to current time.
+
 ## Telegram bot
 
 ### Incoming message:
@@ -100,15 +124,48 @@ Action:
 - build from cv_data_object CV in dark and light templates
 - send CVs to telegram
 
-### Outgoing message:
+### Outgoing messages:
 
-Outgoing message should contain:
+Outgoing messages should be a reply to incoming message.
 - attachment with CVs in dark and light templates
 - recruiter_contact (linkedin profile link) and recruiter_name
+- greeting_message: greeting_message from cv_data_object
 - post text: comment_for_user from cv_data_object
+
+### After parsing and before generation:
+
+After parsing call createVacancy() method with:
+- uuid: uuid auto generated
+- vacancy_text
+- post_link
+- recruiter_name
+- recruiter_contact
+- status: 'created'
+- created_at: Date.now()
+- updated_at: Date.now()
+
+### After generation:
+
+After generation call updateVacancy(post_link, ...) method with:
+- file_name = generated pdf file name
+- position_title = role_original
+- recruiter_telegram - if provided in generated json
+- post_link
+- comment_text
+- greeting_message
+- status: 'generated'
+- updated_at: Date.now()
+
+Statuses:
+- 'created' - vacancy created
+- 'generated' CV generated - by default
+- For future: 'sent' - sent to recruiter, 'declined' - recruiter declined CV, 'cancelled' - decided not to send to recruiter, - will be used later 
+
+If MONGODB_CONNECTION_STRING is set, save vacancy to mongodb `vacancies` collection.
 
 ### Environment variables:
 - TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN
+- MONGODB_CONNECTION_STRING
 
 ## Frontend
 

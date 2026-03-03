@@ -1,5 +1,7 @@
 const { defineConfig, devices } = require('@playwright/test');
 
+const PORT = process.env.PLAYWRIGHT_PORT || '3100';
+
 module.exports = defineConfig({
     testDir: './tests/e2e',
     timeout: 30 * 1000,
@@ -13,7 +15,7 @@ module.exports = defineConfig({
     reporter: 'html',
     use: {
         actionTimeout: 0,
-        baseURL: 'http://localhost:3000',
+        baseURL: `http://localhost:${PORT}`,
         trace: 'on-first-retry',
     },
     projects: [
@@ -23,9 +25,9 @@ module.exports = defineConfig({
         },
     ],
     webServer: {
-        command: 'npm run start:mock',
-        url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI,
+        command: `PORT=${PORT} npm run start:mock`,
+        url: `http://localhost:${PORT}`,
+        reuseExistingServer: true,
         timeout: 120 * 1000,
     },
 });

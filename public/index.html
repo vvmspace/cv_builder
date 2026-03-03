@@ -155,13 +155,16 @@
     <div class="container">
         <div class="field-block">
             <div class="field-header">
-                <button class="restore-btn" type="button" onclick="restoreField('vacancyInput')" title="Restore from localStorage">&#8634;</button>
+                <button class="restore-btn" type="button" onclick="restoreField('vacancyInput')"
+                    title="Restore from localStorage">&#8634;</button>
             </div>
-            <textarea id="vacancyInput" placeholder="// PASTE JOB DESCRIPTION HERE..." style="height: 200px;"></textarea>
+            <textarea id="vacancyInput" placeholder="// PASTE JOB DESCRIPTION HERE..."
+                style="height: 200px;"></textarea>
         </div>
         <div class="field-block">
             <div class="field-header">
-                <button class="restore-btn" type="button" onclick="restoreField('customCommentInput')" title="Restore from localStorage">&#8634;</button>
+                <button class="restore-btn" type="button" onclick="restoreField('customCommentInput')"
+                    title="Restore from localStorage">&#8634;</button>
             </div>
             <textarea id="customCommentInput" placeholder="// ENTER CUSTOM INSTRUCTIONS HERE (OPTIONAL)..."
                 style="height: 100px;"></textarea>
@@ -189,7 +192,14 @@
         </div>
 
         <div id="status"></div>
-        <div style="margin-top: 1rem; display: flex; justify-content: center; width: 100%;">
+        <div
+            style="margin-top: 1rem; display: flex; justify-content: center; align-items: center; width: 100%; gap: 1rem;">
+            <a href="/api/v1/docs" target="_blank"
+                style="color: var(--accent-color); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;"
+                title="API Documentation">
+                API Docs
+            </a>
+            <span style="color: var(--border-color);">|</span>
             <a href="https://github.com/vvmspace/cv_builder" target="_blank"
                 style="color: var(--accent-color); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; opacity: 0.8; transition: opacity 0.2s;"
                 title="Welcome to contribute">

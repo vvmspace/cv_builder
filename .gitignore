@@ -9,3 +9,5 @@ full_cv.md
 prompt.md
 cv.json
 last.json
+playwright-report
+test-results
