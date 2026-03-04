@@ -11,3 +11,6 @@ cv.json
 last.json
 playwright-report
 test-results
+public/*
+frontend/.output/*
+frontend/.nuxt/*

@@ -3,6 +3,9 @@
     "start": "node server.js",
     "start:mock": "MOCK_LLM=true MOCK_TELEGRAM=true node server.js",
     "dev": "node --watch server.js",
+    "dev:frontend": "nuxi dev frontend",
+    "build:frontend": "nuxi generate frontend && rm -rf public && mkdir -p public && cp -R frontend/.output/public/. public/",
+    "build": "npm run build:frontend",
     "json": "node tools/build_pdf_from_json.js",
     "test:e2e": "playwright test"
   },
@@ -15,6 +18,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mongodb": "^6.21.0",
+    "nuxt": "^3.17.7",
     "puppeteer": "^24.37.2",
     "puppeteer-core": "^24.37.5",
     "serverless-http": "^4.0.0",

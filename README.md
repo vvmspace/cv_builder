@@ -1,101 +1,203 @@
 # CV Builder
 
-A system to generate tailored HTML and PDF variations of your CV for specific job vacancies using an LLM (Gemini by default).
+Service for generating tailored CVs (`HTML` + `PDF`) from vacancy text, with Telegram integration, MongoDB pipeline tracking, and a Nuxt-based frontend.
 
-## Features
+## Stack
 
-- **LLM-Powered tailoring:** Parses a job vacancy and customizes your CV structure, professional summary, and relevant experience to match the role better without lying.
-- **Dynamic Render:** Automatically converts the LLM's JSON output into a clean HTML resume.
-- **PDF Generation:** Converts the generated HTML into a print-ready A4 PDF format immediately.
+- Backend: `Express`
+- Frontend: `Nuxt 3` (static build served by Express from `public/`)
+- PDF rendering: `Puppeteer`
+- DB: `MongoDB` (optional)
+- Bot: `Telegram` (`telegraf` API client)
 
-## Directory Structure
+## Main Features
 
-- `full_cv.md`: Your complete CV containing all your experience, skills, and education history. If not found, `full_cv.example.md` is used as a fallback.
-- `cv.json`: The JSON schema defining the precise structure of the CV that the LLM must output to match the HTML template perfectly. If not found, `cv.example.json` is used.
-- `prompt.md`: The base LLM prompt that coordinates the merging of your `full_cv.md`, the target vacancy text, and the target `cv.json` schema. If not found, `prompt.example.md` is used.
-- `templates/`: Contains HTML template files (e.g. `dark.html`, `light.html`) to render the structured CV.
-- `cvs/`: Output directory where generated `.html` and `.pdf` resumes are saved, as well as optional `.comment.md` files.
-- `tools/`: Internal scripts and helpers (e.g., LLM clients, template renderers).
+- Generate CV via API (`/api/v1/generate_cv` or `/api/v1/generate-cv`).
+- Telegram webhook flow for LinkedIn vacancies.
+- Pipeline page (`/pipeline`) with:
+  - adaptive layout (div-table on wide screens, cards on mobile),
+  - status update,
+  - status tabs with counters,
+  - auto-refresh interval,
+  - model column,
+  - recruiter/post links and CV downloads.
+- Background worker (optional) that processes `created` vacancies from MongoDB.
+- LLM fallback chain for bot/worker with temporary model blocking based on recent errors.
 
-## Getting Started
+## Project Layout
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
+- `app.js`: Express app, API, Telegram flow, worker logic.
+- `server.js`: app entrypoint and worker start.
+- `frontend/`: Nuxt source.
+- `public/`: generated frontend static output (served by Express).
+- `templates/`: CV templates (`dark.html`, `light.html`).
+- `cvs/`: generated artifacts (`.html`, `.pdf`, optional `.comment.md`).
+- `tools/`: helpers and scripts.
 
-2. **Environment Variables:**
-   Create a `.env` file in the project root and add your selected API keys.
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+## Scripts
 
-3. **Provide Your Data by Overriding fallbacks:**
-   To safely populate your actual data without tracking it in Git or breaking the example default layout:
-   - Create `full_cv.md` (you can copy context from `full_cv.example.md`) and paste your entire raw CV.
-   - Create `cv.json` if you want to modify the fields or the template context structure.
-   - Create `prompt.md` if you wish to adjust the core system prompts given to the LLM.
+- `npm run start`: start backend server.
+- `npm run start:mock`: start with mock LLM and mock Telegram.
+- `npm run dev`: backend watch mode.
+- `npm run dev:frontend`: run Nuxt frontend in dev mode.
+- `npm run build:frontend`: generate Nuxt static build into `public/`.
+- `npm run build`: alias for `build:frontend`.
+- `npm run json`: render CV from ready JSON via `tools/build_pdf_from_json.js`.
+- `npm run test:e2e`: Playwright tests.
 
-4. **Start the Express Server:**
-   ```bash
-   npm run start
-   # or
-   node server.js
-   ```
+## Environment Variables
 
-## Usage
+Required for real generation:
 
-### Web Interface (Recommended)
+- `GEMINI_API_KEY` and/or `OPENROUTER_API_KEY`
 
-After starting the server, open your browser and navigate to:
-```
-http://localhost:3000
-```
-There you will find a user-friendly web interface where you can:
-- Paste the job description.
-- Add any custom instructions or comments (e.g., "Focus on my Web3 and High-Load experience").
-- Select your preferred theme (Dark/Light).
-- Choose the LLM model to use.
-- Generate and download the resulting PDF in a single click.
+Telegram:
 
-### API Endpoint
+- `TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN`
 
-Alternatively, you can generate a new CV programmatically by calling the `/api/v1/generate-cv` endpoint. Your prompt will be constructed and sent to the LLM automatically.
+MongoDB / pipeline:
 
-```bash
-curl -X POST http://localhost:3000/api/v1/generate-cv \
-     -H "Content-Type: application/json" \
-     -d '{
-       "vacancy_text": "Paste the complete vacancy description here...",
-       "custom_comment": "Focus on my Web3 and High-Load experience.",
-       "template": "dark"
-     }'
-```
+- `MONGODB_CONNECTION_STRING`
 
-The server will return the actual URLs and absolute paths to the generated HTML and PDF files.
+Worker:
 
-```json
-{
-  "success": true,
-  "html_url": "/cvs/cv_17...html",
-  "pdf_url": "/cvs/cv_17...pdf",
-  "pdf_absolute_path": "/Users/.../cv_builder/cvs/cv_17...pdf"
-}
-```
+- `WORKER_ON=true` to enable worker (otherwise disabled)
+- `CHAT_ID` (optional, default: `280615376`) — destination for worker outgoing messages
 
-After each successful `POST /api/v1/generate-cv` (or `/api/v1/generate_cv`) request, the server also stores the latest generated CV JSON to:
-- local/dev: `./last.json`
-- Netlify/Lambda runtime: `/tmp/last.json`
+Optional:
 
-### Build PDF from Ready JSON (CLI)
+- `AUTH_TOKEN` for `PATCH /api/v1/vacancies/:uuid`
+- `PORT` (default: `3000`)
 
-If you already have a CV JSON (for example, `last.json`) and only need to render PDF/HTML:
+## API
 
-```bash
-npm run build:pdf-from-json -- ./last.json ./cvs/manual_dark.pdf dark
-```
+Swagger UI:
 
-Arguments:
-- `input_json_file` (required): path to CV JSON.
-- `output_pdf_file` (optional): output PDF path. If omitted, files are created in `./cvs`.
-- `template` (optional): `dark` (default) or `light`.
+- `GET /api/v1/docs`
+- `GET /api/v1/docs.json`
+
+### `POST /api/v1/generate_cv` (alias: `/api/v1/generate-cv`)
+
+Body:
+
+- `vacancy_text` (required)
+- `custom_comment` (optional)
+- `template`: `dark|light` (default `dark`)
+- `model` (optional)
+- `full_cv_text` (optional)
+
+Response:
+
+- `success`
+- `html_url`
+- `pdf_url`
+- `pdf_absolute_path`
+
+### `POST /api/v1/telegram/webhook`
+
+Receives Telegram Update payload.
+
+### `GET /api/v1/vacancies`
+
+Returns vacancies sorted by status priority and `updated_at` ascending.
+
+Optional query:
+
+- `status`: one status or comma-separated list, e.g.
+  - `?status=generated`
+  - `?status=generated,sent`
+
+### `PATCH /api/v1/vacancies/:uuid`
+
+Partial update (`status`, `comment`) and always updates `updated_at`.
+
+If `AUTH_TOKEN` is set, requires `Authorization: Bearer <token>`.
+
+## Telegram Bot Behavior
+
+Incoming message may include:
+
+- LinkedIn post URL
+- custom text/comment
+
+Flow:
+
+1. Parse LinkedIn post (vacancy text, recruiter name/contact).
+2. Generate CVs (`dark` + `light`).
+3. Send outgoing message:
+   - greeting message,
+   - attachments (CV PDFs),
+   - summary text with recruiter info, post link, comment and **used model**.
+
+MongoDB persistence rule:
+
+- vacancy is saved/updated in DB only if LinkedIn link is present.
+
+## Worker
+
+Worker runs in background only when:
+
+- `WORKER_ON=true`
+- `MONGODB_CONNECTION_STRING` is set
+
+Polling interval:
+
+- every 1 minute
+
+Per tick:
+
+1. Take one vacancy with `status='created'`.
+2. Lock as `processing`.
+3. Generate CVs.
+4. Update vacancy to `generated` with:
+   - `file_name`
+   - `position_title`
+   - `recruiter_telegram`
+   - `post_link`
+   - `comment_text`
+   - `greeting_message`
+   - `model` (used model)
+5. Send Telegram message to `CHAT_ID` using same outgoing rules as manual Telegram flow.
+
+On failure:
+
+- return vacancy to `created`
+- save `worker_error`
+
+## Model Fallback Chain (Bot + Worker)
+
+Priority order:
+
+1. `gemini-3.1-pro-preview`
+2. `gemini-2.5-flash`
+3. `openrouter/free`
+4. `arcee-ai/trinity-large-preview:free`
+5. `nvidia/llama-nemotron-embed-vl-1b-v2:free`
+6. `cognitivecomputations/dolphin-mistral-24b-venice-edition:free`
+7. `arcee-ai/trinity-mini:free`
+8. `gemini-2.0-flash`
+
+If `MONGODB_CONNECTION_STRING` is set:
+
+- failed model calls are saved in `models_errors` collection:
+  - `model`
+  - `last_error_at`
+- models with errors in the last 5 minutes are skipped before selection.
+
+## Frontend Routes
+
+- `/`: manual CV generation UI.
+- `/pipeline`: vacancies pipeline UI with status filtering and auto-refresh.
+
+## Local Run
+
+1. `npm install`
+2. configure `.env`
+3. `npm run build:frontend`
+4. `npm run start`
+
+Open:
+
+- `http://localhost:3000`
+- `http://localhost:3000/pipeline`
+- `http://localhost:3000/api/v1/docs`

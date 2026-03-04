@@ -129,5 +129,8 @@
     "comment_for_user": "In couple of short paragraphs, how to act on screening and interview based on the difference between full CV and generated CV. To make user confident.",
     "recruiter_telegram": "optional: recruiter's telegram profile link if provided in vacancy text",
     "cv_filename_prefix": "We use cv_filename_prefix_TIMESTAMP.pdf for filenames. Please provide suggestion.",
-    "greeting_message": "2-3 sentence to greet recruiter like 'Hello, happy to connect! I seen you post about ... Attached my CV "
+    "greeting_message": "2-3 sentence to greet recruiter like 'Hello {Firstname} happy to connect! I seen you post about ... Attached my CV (some improvisation please) 🤝",
+    "job_location": "location if provided in vacancy text",
+    "salary_expectation": "salary expectation if provided in vacancy text",
+    "remote": "Hybrid/Remote/On-site if provided in vacancy text"
 }

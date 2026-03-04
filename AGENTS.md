@@ -89,7 +89,9 @@ Get vacancies list
 Response:
 - vacancies: array of vacancies
 
-Order by updated_at asc and status: 'generated' should be first.
+Order by updated_at asc and status: 'generated' should be first -> 'connection_requested' -> 'sent'  -> 'cancelled' -> 'declined'
+
+Optional filter by status
 
 ### PATCH /api/v1/vacancies/:uuid
 
@@ -127,7 +129,7 @@ Action:
 ### Outgoing messages:
 
 Outgoing messages should be a reply to incoming message.
-- attachment with CVs in dark and light templates
+- attachment with CVs in dark and light templates with used model
 - recruiter_contact (linkedin profile link) and recruiter_name
 - greeting_message: greeting_message from cv_data_object
 - post text: comment_for_user from cv_data_object
@@ -155,19 +157,77 @@ After generation call updateVacancy(post_link, ...) method with:
 - greeting_message
 - status: 'generated'
 - updated_at: Date.now()
+- model: string - used model
 
 Statuses:
 - 'created' - vacancy created
 - 'generated' CV generated - by default
-- For future: 'sent' - sent to recruiter, 'declined' - recruiter declined CV, 'cancelled' - decided not to send to recruiter, - will be used later 
+- For future: 'connection_requested' - connection requested, 'sent' - sent to recruiter, 'declined' - recruiter declined CV, 'cancelled' - decided not to send to recruiter, - will be used later 
 
-If MONGODB_CONNECTION_STRING is set, save vacancy to mongodb `vacancies` collection.
+If MONGODB_CONNECTION_STRING is set and LinkedIn post link is provided, save vacancy to mongodb `vacancies` collection.
 
 ### Environment variables:
 - TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN
 - MONGODB_CONNECTION_STRING
 
 ## Frontend
+Nuxt.js, adaptive, dark mode, mobile first, PM2
 
-- The most simple frontend is in public/index.html
+Should works in same PM2 process as backend: ecosystem.config.js
+
+### /
+- The most simple frontend for manual generation for API endpoint: /api/v1/generate_cv
 - Everytime when you update models, update list on frontend
+(check public/index.js)
+
+### /pipeline
+
+List of vacancies Adaptive: table like divs on wide screen, cards on mobile.
+
+Auto-refresh with select interval: off (default), 5s, 10s, 30s, 1m, 5m, 10m, 30m
+Clickable filter by status: all, generated, connection_requested, sent, declined, cancelled
+
+Fields:
+- position_title: text
+- link to post (LinkedIn icon)
+- link to recruiter: name + LinkedIn icon
+- status: select box with statuses, call update API on change and fetch vacancies list
+- greeting message: text + copy icon, copy on click, display fulltext
+- links to CVs: PDF icon, HTML icon, download on click
+- model used for generation
+
+## CI - GitHub action
+
+### On push to main
+
+- ssh to sudar@kingofthehill.pro
+- cd /home/sudar/cv_builder
+- git pull && npm i && git checkout . && npm run build && pm2 restart ecosystem.config.js
+
+## Worker
+
+Works only in WORKER_ON=true environment variable.
+
+Worker should be able to run in background and process vacancies from mongodb collection `vacancies` with status 'created'.
+
+Worker should run every 3 minutes, get one vacancy with status 'created' and process it:
+- generate CV
+- update vacancy with status 'generated'
+- update vacancy with file_name, position_title, recruiter_telegram, post_link, comment_text, greeting_message
+- send message to telegram following the same rules as for manual incoming message. CHAT_ID=280615376
+
+If MONGODB_CONNECTION_STRING is not set, worker should not run.
+
+## Models fallback chain (for bot and worker):
+- gemini-3.1-pro-preview
+- gemini-2.5-flash
+- openrouter/free
+- arcee-ai/trinity-large-preview:free
+- nvidia/llama-nemotron-embed-vl-1b-v2:free
+- cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+- arcee-ai/trinity-mini:free
+- gemini-2.0-flash
+
+If MONGODB_CONNECTION_STRING is set:
+- Save model last error to DB `models_errors` collection with fields: model, last_error_at
+- Before selecting models - load from DB and use models without errors in last 5 minutes

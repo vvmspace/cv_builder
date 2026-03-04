@@ -28,6 +28,16 @@ const TEMPLATES_DIR = path.join(__dirname, 'templates');
 fs.mkdirSync(CV_DIR, { recursive: true });
 
 let mongoClientPromise = null;
+const BOT_WORKER_MODEL_CHAIN = [
+    'gemini-3.1-pro-preview',
+    'gemini-2.5-flash',
+    'arcee-ai/trinity-large-preview:free',
+    'openrouter/free',
+    'gemini-2.0-flash',
+    'nvidia/llama-nemotron-embed-vl-1b-v2:free',
+    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+    'arcee-ai/trinity-mini:free',
+];
 
 async function getVacanciesCollection() {
     const connectionString = process.env.MONGODB_CONNECTION_STRING;
@@ -44,6 +54,60 @@ async function getVacanciesCollection() {
 
     const client = await mongoClientPromise;
     return client.db('vacancies').collection('vacancies');
+}
+
+async function getModelErrorsCollection() {
+    const connectionString = process.env.MONGODB_CONNECTION_STRING;
+    if (!connectionString) {
+        return null;
+    }
+
+    if (!mongoClientPromise) {
+        mongoClientPromise = MongoClient.connect(connectionString).catch((error) => {
+            mongoClientPromise = null;
+            throw error;
+        });
+    }
+
+    const client = await mongoClientPromise;
+    return client.db('vacancies').collection('models_errors');
+}
+
+async function saveModelLastError(model) {
+    const collection = await getModelErrorsCollection();
+    if (!collection || !model) {
+        return;
+    }
+
+    await collection.updateOne(
+        { model },
+        {
+            $set: {
+                model,
+                last_error_at: new Date()
+            }
+        },
+        { upsert: true }
+    );
+}
+
+async function getModelsWithoutRecentErrors(models, windowMs = 5 * 60 * 1000) {
+    if (!process.env.MONGODB_CONNECTION_STRING) {
+        return models;
+    }
+
+    const collection = await getModelErrorsCollection();
+    if (!collection) {
+        return models;
+    }
+
+    const threshold = new Date(Date.now() - windowMs);
+    const recentErrors = await collection
+        .find({ last_error_at: { $gte: threshold } }, { projection: { model: 1 } })
+        .toArray();
+    const blocked = new Set(recentErrors.map((row) => row.model).filter(Boolean));
+
+    return models.filter((model) => !blocked.has(model));
 }
 
 async function createVacancy({
@@ -72,6 +136,7 @@ async function createVacancy({
         recruiter_telegram: null,
         comment_text: null,
         greeting_message: null,
+        model: null,
         status: status || 'created',
         created_at: now,
         updated_at: now
@@ -87,6 +152,7 @@ async function updateVacancy(post_link, {
     recruiter_telegram,
     comment_text,
     greeting_message,
+    model,
     status = 'generated'
 }) {
     const collection = await getVacanciesCollection();
@@ -105,6 +171,7 @@ async function updateVacancy(post_link, {
                 recruiter_telegram: recruiter_telegram || null,
                 comment_text: comment_text || null,
                 greeting_message: greeting_message || null,
+                model: model || null,
                 status: status || 'generated',
                 updated_at: now
             }
@@ -168,6 +235,55 @@ function normalizeGeneratedCvJson(generated) {
     return generated;
 }
 
+async function generateContentWithFallbackChain({
+    prompt,
+    model,
+    useFallbackChain = false
+}) {
+    if (!useFallbackChain) {
+        return {
+            result: await llmClient.generateContent(prompt, model),
+            usedModel: model || null
+        };
+    }
+
+    let modelsToTry = [...BOT_WORKER_MODEL_CHAIN];
+
+    if (model && modelsToTry.includes(model)) {
+        modelsToTry = [model, ...modelsToTry.filter((m) => m !== model)];
+    } else if (model) {
+        modelsToTry = [model, ...modelsToTry];
+    }
+
+    modelsToTry = await getModelsWithoutRecentErrors(modelsToTry);
+    if (modelsToTry.length === 0) {
+        throw new Error('No models available: all models have errors in the last 5 minutes');
+    }
+
+    let lastError = null;
+    for (const currentModel of modelsToTry) {
+        try {
+            // eslint-disable-next-line no-await-in-loop
+            return {
+                // eslint-disable-next-line no-await-in-loop
+                result: await llmClient.generateContent(prompt, currentModel),
+                usedModel: currentModel
+            };
+        } catch (error) {
+            lastError = error;
+            console.error(`[ModelFallback] ${currentModel} failed: ${error.message}`);
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                await saveModelLastError(currentModel);
+            } catch (saveError) {
+                console.error(`[ModelFallback] Failed to save model error for ${currentModel}:`, saveError);
+            }
+        }
+    }
+
+    throw lastError || new Error('Failed to generate content with fallback chain');
+}
+
 function getTemplatePath(template) {
     const templateFile = template === 'light' ? 'light.html' : 'dark.html';
     return path.join(TEMPLATES_DIR, templateFile);
@@ -220,7 +336,14 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
     return artifacts;
 }
 
-async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini-3.1-pro-preview', templates = ['dark'], fullCvText }) {
+async function generateCvArtifacts({
+    vacancyText,
+    customComment,
+    model = 'gemini-3.1-pro-preview',
+    templates = ['dark'],
+    fullCvText,
+    useFallbackChain = false
+}) {
     const assets = getGenerationAssets(fullCvText);
     const prompt = buildCvPrompt({
         vacancyText,
@@ -231,35 +354,227 @@ async function generateCvArtifacts({ vacancyText, customComment, model = 'gemini
     });
 
     console.log(`Calling LLM for templates [${templates.join(', ')}] using model ${model}...`);
-    const generatedJson = normalizeGeneratedCvJson(await llmClient.generateContent(prompt, model));
+    const { result, usedModel } = await generateContentWithFallbackChain({ prompt, model, useFallbackChain });
+    const generatedJson = normalizeGeneratedCvJson(result);
     const baseName = `${generatedJson.cv_filename_prefix || 'cv'}_${Date.now()}`;
     const artifacts = await renderAndGeneratePdfs({ generatedJson, templates, baseName });
 
     return {
         generatedJson,
+        usedModel,
         fullCv: assets.fullCv,
         artifacts,
         baseName
     };
 }
 
-async function generateTelegramComment({ vacancyText, customComment, fullCv, generatedCvJson, model = 'gemini-3.1-pro-preview' }) {
+async function generateTelegramComment({
+    vacancyText,
+    customComment,
+    fullCv,
+    generatedCvJson,
+    model = 'gemini-3.1-pro-preview',
+    useFallbackChain = false
+}) {
     const prefix = generatedCvJson && generatedCvJson.cv_filename_prefix
         ? generatedCvJson.cv_filename_prefix
         : 'CV';
     const prompt = `${prefix} You are helping a candidate prepare for a screening and interview.\nReturn JSON only with this schema:\n{\n  "comment_markdown": "string"\n}\n\nTask:\n1) Compare FULL CV vs GENERATED CV for this vacancy.\n2) Explain what was emphasized, de-emphasized, and what gaps remain.\n3) Give practical screening and interview recommendations.\n4) Keep it concise but useful (max ~500 words).\n5) Resume and advice must be in English.\n\nVacancy:\n${vacancyText}\n\nCustom comment from user (optional):\n${customComment || '(none)'}\n\nFULL CV:\n${fullCv}\n\nGENERATED CV JSON:\n${JSON.stringify(generatedCvJson, null, 2)}\n`;
 
-    const response = await llmClient.generateContent(prompt, model);
+    const { result, usedModel } = await generateContentWithFallbackChain({ prompt, model, useFallbackChain });
+    const response = result;
 
     if (response && typeof response.comment_markdown === 'string' && response.comment_markdown.trim()) {
-        return response.comment_markdown.trim();
+        return {
+            commentMarkdown: response.comment_markdown.trim(),
+            usedModel
+        };
     }
 
     if (response && typeof response.raw_text === 'string' && response.raw_text.trim()) {
-        return response.raw_text.trim();
+        return {
+            commentMarkdown: response.raw_text.trim(),
+            usedModel
+        };
     }
 
-    return 'CVs generated. Review the highlighted experience against the vacancy and prepare short examples for the most relevant projects, tradeoffs, and production incidents.';
+    return {
+        commentMarkdown: 'CVs generated. Review the highlighted experience against the vacancy and prepare short examples for the most relevant projects, tradeoffs, and production incidents.',
+        usedModel
+    };
+}
+
+function getGeneratedCommentText(generation, fallbackText = '') {
+    const value =
+        generation?.generatedJson?.comment_for_user
+        && String(generation.generatedJson.comment_for_user).trim();
+    return value || fallbackText || '';
+}
+
+function getGeneratedPositionTitle(generation) {
+    return generation.generatedJson.role_original
+        || generation.generatedJson.role
+        || generation.generatedJson.position_title
+        || null;
+}
+
+async function processOneCreatedVacancy() {
+    const collection = await getVacanciesCollection();
+    if (!collection) {
+        return { processed: false, reason: 'mongodb_disabled' };
+    }
+
+    const vacancy = await collection.findOne(
+        { status: 'created' },
+        { sort: { updated_at: 1, created_at: 1 } }
+    );
+
+    if (!vacancy) {
+        return { processed: false, reason: 'no_created_vacancies' };
+    }
+
+    const lockResult = await collection.updateOne(
+        { _id: vacancy._id, status: 'created' },
+        {
+            $set: {
+                status: 'processing',
+                updated_at: new Date()
+            }
+        }
+    );
+
+    if (lockResult.modifiedCount !== 1) {
+        return { processed: false, reason: 'lock_conflict' };
+    }
+
+    try {
+        if (!vacancy.vacancy_text || String(vacancy.vacancy_text).trim() === '') {
+            throw new Error('Vacancy has empty vacancy_text');
+        }
+
+        const generation = await generateCvArtifacts({
+            vacancyText: String(vacancy.vacancy_text),
+            customComment: String(vacancy.comment_text || ''),
+            templates: ['dark', 'light'],
+            useFallbackChain: true
+        });
+
+        const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
+        const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
+        const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0];
+        if (!primaryArtifact) {
+            throw new Error('CV artifact generation failed');
+        }
+
+        let commentText = getGeneratedCommentText(generation);
+        if (!commentText) {
+            const commentResult = await generateTelegramComment({
+                vacancyText: String(vacancy.vacancy_text),
+                customComment: String(vacancy.comment_text || ''),
+                fullCv: generation.fullCv,
+                generatedCvJson: generation.generatedJson,
+                useFallbackChain: true
+            });
+            commentText = commentResult.commentMarkdown;
+        }
+
+        const summary = buildTelegramSummaryMessage({
+            recruiterName: vacancy.recruiter_name || null,
+            recruiterContact: vacancy.recruiter_contact || null,
+            postLink: vacancy.post_link || null,
+            commentText,
+            model: generation.usedModel || null
+        });
+        const greetingMessage =
+            generation.generatedJson.greeting_message &&
+            String(generation.generatedJson.greeting_message).trim();
+
+        await collection.updateOne(
+            { _id: vacancy._id },
+            {
+                $set: {
+                    status: 'generated',
+                    file_name: primaryArtifact.pdf_filename,
+                    position_title: getGeneratedPositionTitle(generation),
+                    recruiter_telegram: generation.generatedJson.recruiter_telegram || null,
+                    post_link: vacancy.post_link || null,
+                    comment_text: commentText || null,
+                    greeting_message: generation.generatedJson.greeting_message || null,
+                    model: generation.usedModel || null,
+                    updated_at: new Date(),
+                    worker_error: null
+                }
+            }
+        );
+
+        const telegram = createTelegramClient();
+        const workerChatId = process.env.CHAT_ID || '280615376';
+        await sendGeneratedCvToTelegram({
+            telegram,
+            chatId: workerChatId,
+            darkArtifact,
+            lightArtifact,
+            summary,
+            greetingMessage
+        });
+
+        return { processed: true, uuid: vacancy.uuid || null };
+    } catch (error) {
+        await collection.updateOne(
+            { _id: vacancy._id },
+            {
+                $set: {
+                    status: 'created',
+                    updated_at: new Date(),
+                    worker_error: error.message
+                }
+            }
+        );
+
+        throw error;
+    }
+}
+
+function startVacancyWorker({ intervalMs = 60_000 } = {}) {
+    if (String(process.env.WORKER_ON || '').toLowerCase() !== 'true') {
+        console.log('[Worker] WORKER_ON is not true. Worker is disabled.');
+        return null;
+    }
+
+    if (!process.env.MONGODB_CONNECTION_STRING) {
+        console.log('[Worker] MONGODB_CONNECTION_STRING not set. Worker is disabled.');
+        return null;
+    }
+
+    let isRunning = false;
+
+    async function tick() {
+        if (isRunning) {
+            return;
+        }
+
+        isRunning = true;
+        try {
+            const result = await processOneCreatedVacancy();
+            if (result.processed) {
+                console.log(`[Worker] Processed vacancy${result.uuid ? ` ${result.uuid}` : ''}`);
+            }
+        } catch (error) {
+            console.error('[Worker] Failed to process vacancy:', error);
+        } finally {
+            isRunning = false;
+        }
+    }
+
+    const timer = setInterval(tick, intervalMs);
+    tick();
+
+    console.log(`[Worker] Started. Poll interval: ${intervalMs}ms`);
+
+    return () => {
+        clearInterval(timer);
+        console.log('[Worker] Stopped.');
+    };
 }
 
 function extractUrls(text) {
@@ -369,11 +684,12 @@ function getTelegramMessageFromUpdate(update) {
     return update?.message || update?.edited_message || update?.channel_post || update?.edited_channel_post || null;
 }
 
-function buildTelegramSummaryMessage({ recruiterName, recruiterContact, postLink, commentText }) {
+function buildTelegramSummaryMessage({ recruiterName, recruiterContact, postLink, commentText, model }) {
     const lines = [];
     if (recruiterName) lines.push(`Recruiter: ${recruiterName}`);
     if (recruiterContact) lines.push(`Recruiter contact: ${recruiterContact}`);
     if (postLink) lines.push(`Post link: ${postLink}`);
+    if (model) lines.push(`Model: ${model}`);
     lines.push('');
     lines.push(commentText || '');
     return lines.join('\n').trim();
@@ -387,116 +703,31 @@ async function sendTelegramTextInChunks(telegram, chatId, text) {
     }
 }
 
-async function processTelegramUpdate(update) {
+function createTelegramClient() {
     const telegramToken = process.env.TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN;
     if (!telegramToken && process.env.MOCK_TELEGRAM !== 'true') {
         throw new Error('TELEGRAM_VVM_CV_ADAPTOR_BOT_TOKEN is not configured');
     }
 
-    const message = getTelegramMessageFromUpdate(update);
-    if (!message || !message.chat || typeof message.chat.id === 'undefined') {
-        return;
-    }
-
-    const chatId = message.chat.id;
-    const incomingText = message.text || message.caption || '';
-    const urls = extractUrls(incomingText);
-    const linkedinUrl = pickLinkedInPostUrl(urls);
-    const textWithoutUrls = stripUrls(incomingText);
-
     class MockTelegram {
         async sendMessage(chat, text, opts) { console.log(`[MockTelegram] sendMessage to ${chat}`); }
         async sendMediaGroup(chat, media) { console.log(`[MockTelegram] sendMediaGroup to ${chat}`); }
     }
-    const telegram = process.env.MOCK_TELEGRAM === 'true'
+
+    return process.env.MOCK_TELEGRAM === 'true'
         ? new MockTelegram()
         : new Telegram(telegramToken);
+}
 
-    let vacancyText;
-    let linkedinData = null;
-    const customComment = stripUrls(incomingText);
-
-    if (linkedinUrl) {
-        linkedinData = await fetchAndParseLinkedInPost(linkedinUrl);
-        if (textWithoutUrls) {
-            vacancyText = `${textWithoutUrls}\n\n${linkedinData.vacancy_text}`;
-        } else {
-            vacancyText = linkedinData.vacancy_text;
-        }
-    } else {
-        if (!textWithoutUrls) {
-            await telegram.sendMessage(chatId, 'Send a LinkedIn post link or paste vacancy text in the same message.');
-            return;
-        }
-        vacancyText = textWithoutUrls;
-    }
-
-    try {
-        await createVacancy({
-            vacancy_text: vacancyText,
-            post_link: linkedinData?.post_link || linkedinUrl || null,
-            recruiter_name: linkedinData?.recruiter_name || null,
-            recruiter_contact: linkedinData?.recruiter_contact || null,
-            status: 'created'
-        });
-    } catch (error) {
-        console.error('Failed to create vacancy in MongoDB:', error);
-    }
-
-    const generation = await generateCvArtifacts({
-        vacancyText,
-        customComment,
-        templates: ['dark', 'light']
-    });
-
-    let commentText =
-        (generation.generatedJson.comment_for_user && String(generation.generatedJson.comment_for_user).trim()) || '';
-    if (!commentText) {
-        const vacancyTextForComment = linkedinData?.vacancy_text || vacancyText;
-        commentText = await generateTelegramComment({
-            vacancyText: vacancyTextForComment,
-            customComment,
-            fullCv: generation.fullCv,
-            generatedCvJson: generation.generatedJson
-        });
-    }
-
-    const commentFilename = `${generation.baseName}.comment.md`;
-    const commentPath = path.join(CV_DIR, commentFilename);
-    fs.writeFileSync(commentPath, commentText);
-
-    const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
-    const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
-
-    const summary = buildTelegramSummaryMessage({
-        recruiterName: linkedinData?.recruiter_name || null,
-        recruiterContact: linkedinData?.recruiter_contact || null,
-        postLink: linkedinData?.post_link || null,
-        commentText
-    });
-
-    try {
-        const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0] || null;
-        if (primaryArtifact) {
-            await updateVacancy(linkedinData?.post_link || linkedinUrl || null, {
-                file_name: primaryArtifact.pdf_filename,
-                position_title:
-                    generation.generatedJson.role_original
-                    || generation.generatedJson.role
-                    || generation.generatedJson.position_title
-                    || null,
-                recruiter_telegram: generation.generatedJson.recruiter_telegram || null,
-                comment_text: commentText,
-                greeting_message: generation.generatedJson.greeting_message || null,
-                status: 'generated'
-            });
-        }
-    } catch (error) {
-        console.error('Failed to update vacancy in MongoDB:', error);
-    }
-
+async function sendGeneratedCvToTelegram({
+    telegram,
+    chatId,
+    darkArtifact,
+    lightArtifact,
+    summary,
+    greetingMessage
+}) {
     const media = [];
-
     const MAX_CAPTION_LENGTH = 1000;
     const caption = summary.length > MAX_CAPTION_LENGTH ? summary.slice(0, MAX_CAPTION_LENGTH) : summary;
 
@@ -525,10 +756,6 @@ async function processTelegramUpdate(update) {
         );
     }
 
-    const greetingMessage =
-        generation.generatedJson.greeting_message &&
-        String(generation.generatedJson.greeting_message).trim();
-
     if (greetingMessage) {
         await telegram.sendMessage(chatId, greetingMessage);
     }
@@ -542,6 +769,126 @@ async function processTelegramUpdate(update) {
     } else {
         await sendTelegramTextInChunks(telegram, chatId, summary);
     }
+}
+
+async function processTelegramUpdate(update) {
+    const message = getTelegramMessageFromUpdate(update);
+    if (!message || !message.chat || typeof message.chat.id === 'undefined') {
+        return;
+    }
+
+    const chatId = message.chat.id;
+    const incomingText = message.text || message.caption || '';
+    const urls = extractUrls(incomingText);
+    const linkedinUrl = pickLinkedInPostUrl(urls);
+    const textWithoutUrls = stripUrls(incomingText);
+
+    const telegram = createTelegramClient();
+
+    let vacancyText;
+    let linkedinData = null;
+    const customComment = stripUrls(incomingText);
+
+    if (linkedinUrl) {
+        linkedinData = await fetchAndParseLinkedInPost(linkedinUrl);
+        if (textWithoutUrls) {
+            vacancyText = `${textWithoutUrls}\n\n${linkedinData.vacancy_text}`;
+        } else {
+            vacancyText = linkedinData.vacancy_text;
+        }
+    } else {
+        if (!textWithoutUrls) {
+            await telegram.sendMessage(chatId, 'Send a LinkedIn post link or paste vacancy text in the same message.');
+            return;
+        }
+        vacancyText = textWithoutUrls;
+    }
+
+    if (linkedinUrl) {
+        try {
+            await createVacancy({
+                vacancy_text: vacancyText,
+                post_link: linkedinData?.post_link || linkedinUrl || null,
+                recruiter_name: linkedinData?.recruiter_name || null,
+                recruiter_contact: linkedinData?.recruiter_contact || null,
+                status: 'created'
+            });
+        } catch (error) {
+            console.error('Failed to create vacancy in MongoDB:', error);
+        }
+    }
+
+    const generation = await generateCvArtifacts({
+        vacancyText,
+        customComment,
+        templates: ['dark', 'light'],
+        useFallbackChain: true
+    });
+
+    let commentText =
+        (generation.generatedJson.comment_for_user && String(generation.generatedJson.comment_for_user).trim()) || '';
+    if (!commentText) {
+        const vacancyTextForComment = linkedinData?.vacancy_text || vacancyText;
+        const commentResult = await generateTelegramComment({
+            vacancyText: vacancyTextForComment,
+            customComment,
+            fullCv: generation.fullCv,
+            generatedCvJson: generation.generatedJson,
+            useFallbackChain: true
+        });
+        commentText = commentResult.commentMarkdown;
+    }
+
+    const commentFilename = `${generation.baseName}.comment.md`;
+    const commentPath = path.join(CV_DIR, commentFilename);
+    fs.writeFileSync(commentPath, commentText);
+
+    const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
+    const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
+
+    const summary = buildTelegramSummaryMessage({
+        recruiterName: linkedinData?.recruiter_name || null,
+        recruiterContact: linkedinData?.recruiter_contact || null,
+        postLink: linkedinData?.post_link || null,
+        commentText,
+        model: generation.usedModel || null
+    });
+
+    if (linkedinUrl) {
+        try {
+            const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0] || null;
+            if (primaryArtifact) {
+                await updateVacancy(linkedinData?.post_link || linkedinUrl || null, {
+                    file_name: primaryArtifact.pdf_filename,
+                    position_title:
+                        generation.generatedJson.role_original
+                        || generation.generatedJson.role
+                        || generation.generatedJson.position_title
+                        || null,
+                    recruiter_telegram: generation.generatedJson.recruiter_telegram || null,
+                    comment_text: commentText,
+                    greeting_message: generation.generatedJson.greeting_message || null,
+                    model: generation.usedModel || null,
+                    status: 'generated'
+                });
+            }
+        } catch (error) {
+            console.error('Failed to update vacancy in MongoDB:', error);
+        }
+    }
+
+    const greetingMessage =
+        generation.generatedJson.greeting_message &&
+        String(generation.generatedJson.greeting_message).trim();
+
+    await sendGeneratedCvToTelegram({
+        telegram,
+        chatId,
+        darkArtifact,
+        lightArtifact,
+        summary,
+        greetingMessage
+    });
 }
 
 // Initialize LLM Client
@@ -630,19 +977,35 @@ app.post('/api/v1/telegram/webhook', async (req, res) => {
 });
 
 app.get('/api/v1/vacancies', async (req, res) => {
+    const statusFilterRaw = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+    const statusFilter = statusFilterRaw
+        ? statusFilterRaw.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+
     try {
         const collection = await getVacanciesCollection();
         if (!collection) {
             return res.json({ vacancies: [] });
         }
 
-        const vacancies = await collection.find({}).toArray();
+        const query = statusFilter.length > 0
+            ? { status: { $in: statusFilter } }
+            : {};
+        const vacancies = await collection.find(query).toArray();
+        const statusOrder = {
+            generated: 0,
+            connection_requested: 1,
+            sent: 2,
+            cancelled: 3,
+            declined: 4,
+            created: 5
+        };
 
         vacancies.sort((a, b) => {
-            const aGenerated = a.status === 'generated';
-            const bGenerated = b.status === 'generated';
-            if (aGenerated !== bGenerated) {
-                return aGenerated ? -1 : 1;
+            const aRank = statusOrder[a.status] ?? Number.MAX_SAFE_INTEGER;
+            const bRank = statusOrder[b.status] ?? Number.MAX_SAFE_INTEGER;
+            if (aRank !== bRank) {
+                return aRank - bRank;
             }
 
             const aTime = (a.updated_at || a.created_at || new Date(0)).getTime();
@@ -775,6 +1138,15 @@ const openApiSpec = {
         '/api/v1/vacancies': {
             get: {
                 summary: 'Get vacancies',
+                parameters: [
+                    {
+                        name: 'status',
+                        in: 'query',
+                        required: false,
+                        description: 'Optional status filter. Supports comma-separated values.',
+                        schema: { type: 'string' }
+                    }
+                ],
                 responses: {
                     200: {
                         description: 'List of vacancies',
@@ -846,6 +1218,8 @@ module.exports = {
     app,
     handleGenerateCvRequest,
     processTelegramUpdate,
+    processOneCreatedVacancy,
+    startVacancyWorker,
     parseLinkedInPostHtml,
     extractUrls,
     pickLinkedInPostUrl,
