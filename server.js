@@ -5,7 +5,7 @@ const port = Number(process.env.PORT) || 3000;
 
 if (require.main === module) {
     startExpressServer(app, port);
-    startVacancyWorker({ intervalMs: 60_000 });
+    startVacancyWorker({ intervalMs: 600_000 });
 }
 
 module.exports = require('./app');

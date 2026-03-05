@@ -115,6 +115,7 @@ async function createVacancy({
     post_link,
     recruiter_name,
     recruiter_contact,
+    comment_text = null,
     status = 'created'
 }) {
     const collection = await getVacanciesCollection();
@@ -134,7 +135,7 @@ async function createVacancy({
         file_name: null,
         position_title: null,
         recruiter_telegram: null,
-        comment_text: null,
+        comment_text: comment_text || null,
         greeting_message: null,
         model: null,
         status: status || 'created',
@@ -144,6 +145,88 @@ async function createVacancy({
 
     await collection.insertOne(doc);
     return doc;
+}
+
+const TERMINAL_REGEN_BLOCK_STATUSES = new Set(['sent', 'send', 'cancelled', 'canceled', 'declined']);
+
+async function createOrRefreshVacancyByPostLink({
+    vacancy_text,
+    post_link,
+    recruiter_name,
+    recruiter_contact,
+    comment_text = null
+}) {
+    const collection = await getVacanciesCollection();
+    if (!collection) {
+        return null;
+    }
+
+    const normalizedPostLink = post_link || null;
+    if (!normalizedPostLink) {
+        return createVacancy({
+            vacancy_text,
+            post_link,
+            recruiter_name,
+            recruiter_contact,
+            comment_text,
+            status: 'created'
+        });
+    }
+
+    const existing = await collection.findOne(
+        { post_link: normalizedPostLink },
+        { sort: { updated_at: -1, created_at: -1 } }
+    );
+
+    if (!existing) {
+        return createVacancy({
+            vacancy_text,
+            post_link: normalizedPostLink,
+            recruiter_name,
+            recruiter_contact,
+            comment_text,
+            status: 'created'
+        });
+    }
+
+    const existingStatus = String(existing.status || '').toLowerCase();
+    if (TERMINAL_REGEN_BLOCK_STATUSES.has(existingStatus)) {
+        return createVacancy({
+            vacancy_text,
+            post_link: normalizedPostLink,
+            recruiter_name,
+            recruiter_contact,
+            comment_text,
+            status: 'created'
+        });
+    }
+
+    const now = new Date();
+    await collection.updateOne(
+        { _id: existing._id },
+        {
+            $set: {
+                vacancy_text: vacancy_text || existing.vacancy_text || null,
+                recruiter_name: recruiter_name || existing.recruiter_name || null,
+                recruiter_contact: recruiter_contact || existing.recruiter_contact || null,
+                comment_text: comment_text || null,
+                status: 'created',
+                updated_at: now,
+                worker_error: null
+            }
+        }
+    );
+
+    return {
+        ...existing,
+        vacancy_text: vacancy_text || existing.vacancy_text || null,
+        recruiter_name: recruiter_name || existing.recruiter_name || null,
+        recruiter_contact: recruiter_contact || existing.recruiter_contact || null,
+        comment_text: comment_text || null,
+        status: 'created',
+        updated_at: now,
+        worker_error: null
+    };
 }
 
 async function updateVacancy(post_link, {
@@ -535,7 +618,7 @@ async function processOneCreatedVacancy() {
     }
 }
 
-function startVacancyWorker({ intervalMs = 60_000 } = {}) {
+function startVacancyWorker({ intervalMs = 600_000 } = {}) {
     if (String(process.env.WORKER_ON || '').toLowerCase() !== 'true') {
         console.log('[Worker] WORKER_ON is not true. Worker is disabled.');
         return null;
@@ -806,15 +889,15 @@ async function processTelegramUpdate(update) {
 
     if (linkedinUrl) {
         try {
-            await createVacancy({
+            await createOrRefreshVacancyByPostLink({
                 vacancy_text: vacancyText,
                 post_link: linkedinData?.post_link || linkedinUrl || null,
                 recruiter_name: linkedinData?.recruiter_name || null,
                 recruiter_contact: linkedinData?.recruiter_contact || null,
-                status: 'created'
+                comment_text: customComment || null
             });
         } catch (error) {
-            console.error('Failed to create vacancy in MongoDB:', error);
+            console.error('Failed to create or refresh vacancy in MongoDB:', error);
         }
     }
 
