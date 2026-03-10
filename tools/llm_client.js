@@ -18,6 +18,10 @@ class GeminiClient extends LLMClient {
     constructor(apiKey) {
         super(apiKey);
         this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
+        this.apiKeys = String(apiKey)
+            .split(',')
+            .map((key) => key.trim())
+            .filter(Boolean);
         this.fallbackChain = [
             'gemini-3.1-pro-preview',
             'gemini-2.5-flash',
@@ -37,7 +41,7 @@ class GeminiClient extends LLMClient {
         const isStreamingOnlyModel = model && model.startsWith('gemini-3.');
         const method = isStreamingOnlyModel ? 'streamGenerateContent' : 'generateContent';
         const url = new URL(`${this.baseUrl}/${model}:${method}`);
-        url.searchParams.append('key', this.apiKey);
+        url.searchParams.append('key', this._getRandomApiKey());
 
         const payload = {
             contents: [{
@@ -140,6 +144,15 @@ class GeminiClient extends LLMClient {
             req.write(JSON.stringify(payload));
             req.end();
         });
+    }
+
+    _getRandomApiKey() {
+        if (this.apiKeys.length === 0) {
+            throw new Error('Gemini API key not configured');
+        }
+
+        const index = Math.floor(Math.random() * this.apiKeys.length);
+        return this.apiKeys[index];
     }
 
     /**

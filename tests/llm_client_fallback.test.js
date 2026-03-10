@@ -51,3 +51,15 @@ test('GeminiClient falls back on rate limit errors following configured chain', 
     );
 });
 
+test('GeminiClient selects a random key from a comma-separated list for each request', () => {
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+
+    try {
+        const client = new GeminiClient('key-1, key-2, key-3');
+        assert.equal(client._getRandomApiKey(), 'key-3');
+        assert.deepEqual(client.apiKeys, ['key-1', 'key-2', 'key-3']);
+    } finally {
+        Math.random = originalRandom;
+    }
+});

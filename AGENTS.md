@@ -218,6 +218,13 @@ Worker should run every 3 minutes, get one vacancy with status 'created' and pro
 
 If MONGODB_CONNECTION_STRING is not set, worker should not run.
 
+## LLM API KEYS
+
+LLM API keys are separated by commas like:
+GEMINI_API_KEY=key1,key2,key3
+
+Use random key from the list for each request.
+
 ## Models fallback chain (for bot and worker):
 - gemini-3.1-pro-preview
 - gemini-2.5-flash
