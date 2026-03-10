@@ -3,7 +3,7 @@
     "name": "Name From Fullcv",
     "role": "Position for this job",
     "role_original": "Position extracted from vacancy text (not for generation, just for reference)",
-    "email": "Email from Fullcv",
+    "email": "Email from Fullcv + short company name + few letters of role: a@b.c => a+company_role@b.c",
     "phone": "Phone from Fullcv",
     "location": "Location from Fullcv",
     "github": "github.com/vvmspace",

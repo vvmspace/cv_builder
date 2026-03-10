@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
 
 const vacancyText = ref('');
 const customComment = ref('');
-const template = ref('dark');
+const template = ref('dark_calendly');
 const model = ref('gemini-3.1-pro-preview');
 const isGenerating = ref(false);
 const statusHtml = ref('');
@@ -173,6 +173,7 @@ onMounted(() => {
           v-model="template"
           @change="persistField(STORAGE_KEYS.templateSelect, template)"
         >
+          <option value="dark_calendly">Dark Calendly</option>
           <option value="dark">Dark Theme</option>
           <option value="light">Light Theme</option>
         </select>

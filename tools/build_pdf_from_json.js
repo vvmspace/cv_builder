@@ -8,13 +8,22 @@ const TEMPLATES_DIR = path.join(ROOT_DIR, 'templates');
 const OUTPUT_DIR = path.join(ROOT_DIR, 'cvs');
 
 function getTemplatePath(template) {
-    return path.join(TEMPLATES_DIR, template === 'light' ? 'light.html' : 'dark.html');
+    const templateFileByName = {
+        dark: 'dark.html',
+        light: 'light.html',
+        dark_calendly: 'dark_calendly.html'
+    };
+    const templateFile = templateFileByName[template];
+    if (!templateFile) {
+        throw new Error(`Unsupported template: ${template}`);
+    }
+    return path.join(TEMPLATES_DIR, templateFile);
 }
 
 function parseCliArgs() {
     const inputPathArg = process.argv[2];
     const outputPdfArg = process.argv[3];
-    const templateArg = process.argv[4] || 'dark';
+    const templateArg = process.argv[4] || 'dark_calendly';
 
     if (!inputPathArg) {
         console.error('Usage: node tools/build_pdf_from_json.js <input_json_file> [output_pdf_file] [template]');
@@ -22,8 +31,8 @@ function parseCliArgs() {
         process.exit(1);
     }
 
-    if (!['dark', 'light'].includes(templateArg)) {
-        console.error('Template must be "dark" or "light"');
+    if (!['dark', 'light', 'dark_calendly'].includes(templateArg)) {
+        console.error('Template must be "dark", "light", or "dark_calendly"');
         process.exit(1);
     }
 

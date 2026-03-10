@@ -30,7 +30,7 @@ Service for generating tailored CVs (`HTML` + `PDF`) from vacancy text, with Tel
 - `server.js`: app entrypoint and worker start.
 - `frontend/`: Nuxt source.
 - `public/`: generated frontend static output (served by Express).
-- `templates/`: CV templates (`dark.html`, `light.html`).
+- `templates/`: CV templates (`dark.html`, `light.html`, `dark_calendly.html`).
 - `cvs/`: generated artifacts (`.html`, `.pdf`, optional `.comment.md`).
 - `tools/`: helpers and scripts.
 
@@ -82,7 +82,7 @@ Body:
 
 - `vacancy_text` (required)
 - `custom_comment` (optional)
-- `template`: `dark|light` (default `dark`)
+- `template`: `dark|light|dark_calendly` (default `dark_calendly`)
 - `model` (optional)
 - `full_cv_text` (optional)
 

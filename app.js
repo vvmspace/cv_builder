@@ -368,7 +368,15 @@ async function generateContentWithFallbackChain({
 }
 
 function getTemplatePath(template) {
-    const templateFile = template === 'light' ? 'light.html' : 'dark.html';
+    const templateFileByName = {
+        dark: 'dark.html',
+        light: 'light.html',
+        dark_calendly: 'dark_calendly.html'
+    };
+    const templateFile = templateFileByName[template];
+    if (!templateFile) {
+        throw new Error(`Unsupported template: ${template}`);
+    }
     return path.join(TEMPLATES_DIR, templateFile);
 }
 
@@ -423,7 +431,7 @@ async function generateCvArtifacts({
     vacancyText,
     customComment,
     model = 'gemini-3.1-pro-preview',
-    templates = ['dark'],
+    templates = ['dark_calendly'],
     fullCvText,
     useFallbackChain = false
 }) {
@@ -538,11 +546,11 @@ async function processOneCreatedVacancy() {
         const generation = await generateCvArtifacts({
             vacancyText: String(vacancy.vacancy_text),
             customComment: String(vacancy.comment_text || ''),
-            templates: ['dark', 'light'],
+            templates: ['dark_calendly', 'light'],
             useFallbackChain: true
         });
 
-        const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
+        const darkArtifact = generation.artifacts.find((a) => a.template === 'dark_calendly');
         const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
         const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0];
         if (!primaryArtifact) {
@@ -904,7 +912,7 @@ async function processTelegramUpdate(update) {
     const generation = await generateCvArtifacts({
         vacancyText,
         customComment,
-        templates: ['dark', 'light'],
+        templates: ['dark_calendly', 'light'],
         useFallbackChain: true
     });
 
@@ -926,7 +934,7 @@ async function processTelegramUpdate(update) {
     const commentPath = path.join(CV_DIR, commentFilename);
     fs.writeFileSync(commentPath, commentText);
 
-    const darkArtifact = generation.artifacts.find((a) => a.template === 'dark');
+    const darkArtifact = generation.artifacts.find((a) => a.template === 'dark_calendly');
     const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
 
     const summary = buildTelegramSummaryMessage({
@@ -1003,7 +1011,7 @@ async function handleGenerateCvRequest(req, res) {
             vacancy_text,
             custom_comment,
             model = 'gemini-3.1-pro-preview',
-            template = 'dark',
+            template = 'dark_calendly',
             full_cv_text
         } = req.body;
 
@@ -1167,7 +1175,7 @@ const openApiSpec = {
                                 properties: {
                                     vacancy_text: { type: 'string' },
                                     custom_comment: { type: 'string' },
-                                    template: { type: 'string', enum: ['dark', 'light'], default: 'dark' },
+                                    template: { type: 'string', enum: ['dark', 'light', 'dark_calendly'], default: 'dark_calendly' },
                                     model: { type: 'string', default: 'gemini-3.1-pro-preview' },
                                     full_cv_text: { type: 'string' }
                                 },

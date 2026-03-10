@@ -28,6 +28,7 @@ test.describe('Web UI', () => {
         await page.goto('/');
 
         await expect(page.locator('h1')).toHaveText('CV Adapt // VVM');
+        await expect(page.locator('#templateSelect')).toHaveValue('dark_calendly');
 
         // Fill form
         await page.fill('#vacancyInput', 'Looking for a Software Engineer');
@@ -47,4 +48,3 @@ test.describe('Web UI', () => {
         expect(download.url()).toContain('/mock_cv_light.pdf');
     });
 });
-

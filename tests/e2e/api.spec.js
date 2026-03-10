@@ -24,4 +24,18 @@ test.describe('CV Generation API', () => {
         expect(data.html_url).toMatch(/_dark\.html$/);
         expect(data.pdf_absolute_path).toBeDefined();
     });
+
+    test('should support dark_calendly template', async ({ request }) => {
+        const response = await request.post('/api/v1/generate_cv', {
+            data: { vacancy_text: 'Software Engineer', template: 'dark_calendly' }
+        });
+
+        expect(response.status()).toBe(200);
+        const data = await response.json();
+
+        expect(data.success).toBe(true);
+        expect(data.pdf_url).toMatch(/_dark_calendly\.pdf$/);
+        expect(data.html_url).toMatch(/_dark_calendly\.html$/);
+        expect(data.pdf_absolute_path).toBeDefined();
+    });
 });
