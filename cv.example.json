@@ -132,5 +132,6 @@
     "greeting_message": "2-3 sentence to greet recruiter like 'Hello {Firstname} happy to connect! I seen you post about ... Attached my CV (some improvisation please) 🤝 | Or short 2-3 sentences Cover Letter if informantion about recruiter is not provided.",
     "job_location": "location if provided in vacancy text",
     "salary_expectation": "salary expectation if provided in vacancy text",
-    "remote": "Hybrid/Remote/On-site if provided in vacancy text"
+    "remote": "Hybrid/Remote/On-site if provided in vacancy text",
+    "match_rate": "required: rate match between original cv and vacancy text in integer percentage: 0..100"
 }
