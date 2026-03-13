@@ -2,7 +2,6 @@
     "title": "Name From Fullcv - Position fits this job or from CV if not provided",
     "name": "Name From Fullcv",
     "role": "Position for this job",
-    "role_original": "Position extracted from vacancy text (not for generation, just for reference)",
     "email": "Email from Fullcv + short company name + few letters of role: a@b.c => a+company_role@b.c",
     "phone": "Phone from Fullcv",
     "location": "Location from Fullcv",
@@ -126,12 +125,15 @@
     "education": "**Information Security**, Moscow Technological University",
     "speaking_languages": "**English (Advanced B2-C1)**, Russian (Native), Spanish (Beginner A2), Armenian (Beginner)",
     "footer_status": "// STATUS: READY_TO_DEPLOY // TETHER_COMPATIBLE // 2026",
+    "next fields": "next fields are technical and will not be added to CV",
+    "role_original": "Position extracted from vacancy text",
     "comment_for_user": "In couple of short paragraphs, how to act on screening and interview based on the difference between full CV and generated CV. To make user confident.",
-    "recruiter_telegram": "optional: recruiter's telegram profile link if provided in vacancy text",
-    "cv_filename_prefix": "We use cv_filename_prefix_TIMESTAMP.pdf for filenames. Please provide suggestion.",
-    "greeting_message": "2-3 sentence to greet recruiter like 'Hello {Firstname} happy to connect! I seen you post about ... Attached my CV (some improvisation please) 🤝 | Or short 2-3 sentences Cover Letter if informantion about recruiter is not provided.",
+    "recruiter_telegram": "recruiter's telegram profile link if provided in vacancy text",
+    "cv_filename_prefix": "Will be used as {cv_filename_prefix}_{TIMESTAMP?}.pdf as filename.",
+    "greeting_message": "3-5 sentences Cover Letter, or 2-3 sentences to greet recruiter if recruiter contact is provided.",
     "job_location": "location if provided in vacancy text",
     "salary_expectation": "salary expectation if provided in vacancy text",
     "remote": "Hybrid/Remote/On-site if provided in vacancy text",
-    "match_rate": "required: rate match between original cv and vacancy text in integer percentage: 0..100"
+    "match_rate": "required: honestly rate match between original full cv and vacancy text in integer percentage: 0..100",
+    "top_tech_and_skills": "top 5 from vacancy, comma separated, like: Nuxt.js, TypeScript, Rust, AI, Blockchain, High-Load"
 }
