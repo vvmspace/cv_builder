@@ -1036,7 +1036,9 @@ async function handleGenerateCvRequest(req, res) {
             pdf_url: artifact.pdf_url,
             pdf_absolute_path: artifact.pdf_path,
             greeting_message: generation.generatedJson.greeting_message,
-            match_rate: generation.generatedJson.match_rate ? parseInt(generation.generatedJson.match_rate) : null
+            match_rate: generation.generatedJson.match_rate ? parseInt(generation.generatedJson.match_rate) : null,
+            top_tech_and_skills: generation.generatedJson.top_tech_and_skills,
+            email: generation.generatedJson.email
         });
     } catch (error) {
         console.error('Error generating CV:', error);
