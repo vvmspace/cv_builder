@@ -11,7 +11,7 @@ async function launchBrowser() {
     if (!isNetlifyRuntime()) {
         return puppeteer.launch({
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files']
         });
     }
 

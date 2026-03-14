@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
 
 const vacancyText = ref('');
 const customComment = ref('');
-const template = ref('dark_calendly');
+const template = ref('dark_matrix_calendly');
 const model = ref('gemini-3.1-pro-preview');
 const isGenerating = ref(false);
 const statusHtml = ref('');
@@ -173,9 +173,13 @@ onMounted(() => {
           v-model="template"
           @change="persistField(STORAGE_KEYS.templateSelect, template)"
         >
-          <option value="dark_calendly">Dark Calendly</option>
-          <option value="dark">Dark Theme</option>
-          <option value="light">Light Theme</option>
+          <option value="dark_matrix_calendly">Dark Matrix Calendly</option>
+          <option value="dark_matrix">Dark Matrix</option>
+          <option value="dark_deep_blue_with_photo_calendly">Dark Deep Blue + Photo + Calendly</option>
+          <option value="dark_deep_blue_with_photo">Dark Deep Blue + Photo</option>
+          <option value="dark_deep_blue">Dark Deep Blue</option>
+          <option value="light_calendly">Light Calendly</option>
+          <option value="light">Light</option>
         </select>
 
         <select

@@ -14,3 +14,7 @@ test-results
 public/*
 frontend/.output/*
 frontend/.nuxt/*
+
+# Personal photo (add manually)
+photos/ava.png
+.vscode

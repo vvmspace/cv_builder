@@ -367,17 +367,56 @@ async function generateContentWithFallbackChain({
     throw lastError || new Error('Failed to generate content with fallback chain');
 }
 
+const DEFAULT_TEMPLATE = process.env.DEFAULT_TEMPLATE || 'dark_matrix';
+
 function getTemplatePath(template) {
     const templateFileByName = {
-        dark: 'dark.html',
         light: 'light.html',
-        dark_calendly: 'dark_calendly.html'
+        light_calendly: 'light_calendly.html',
+        dark_deep_blue: 'dark_deep_blue.html',
+        dark_deep_blue_with_photo: 'dark_deep_blue_with_photo.html',
+        dark_deep_blue_with_photo_calendly: 'dark_deep_blue_with_photo_calendly.html',
+        dark_matrix: 'dark_matrix.html',
+        dark_matrix_calendly: 'dark_matrix_calendly.html'
     };
     const templateFile = templateFileByName[template];
     if (!templateFile) {
         throw new Error(`Unsupported template: ${template}`);
     }
     return path.join(TEMPLATES_DIR, templateFile);
+}
+
+function templateExists(template) {
+    try {
+        const p = getTemplatePath(template);
+        return fs.existsSync(p);
+    } catch {
+        return false;
+    }
+}
+
+function resolveTemplate(requestedTemplate, generatedJson) {
+    // 1. Requested template is valid and exists
+    if (requestedTemplate && templateExists(requestedTemplate)) {
+        return requestedTemplate;
+    }
+    // 2. LLM suggested a template
+    const llmTemplate = generatedJson && generatedJson.template;
+    if (llmTemplate && templateExists(llmTemplate)) {
+        return llmTemplate;
+    }
+    // 3. DEFAULT_TEMPLATE env/constant
+    if (templateExists(DEFAULT_TEMPLATE)) {
+        return DEFAULT_TEMPLATE;
+    }
+    // 4. Random from actually existing templates
+    const existing = fs.readdirSync(TEMPLATES_DIR)
+        .filter((f) => f.endsWith('.html'))
+        .map((f) => f.replace(/\.html$/, ''));
+    if (existing.length === 0) {
+        throw new Error('No templates found in templates directory');
+    }
+    return existing[Math.floor(Math.random() * existing.length)];
 }
 
 async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
@@ -431,7 +470,8 @@ async function generateCvArtifacts({
     vacancyText,
     customComment,
     model = 'gemini-3.1-pro-preview',
-    templates = ['dark_calendly'],
+    templates = null,
+    resolveTemplates = null,
     fullCvText,
     useFallbackChain = false
 }) {
@@ -444,11 +484,16 @@ async function generateCvArtifacts({
         promptTemplate: assets.promptTemplate
     });
 
-    console.log(`Calling LLM for templates [${templates.join(', ')}] using model ${model}...`);
+    const effectiveTemplates = templates || [DEFAULT_TEMPLATE];
+    console.log(`Calling LLM for templates [${effectiveTemplates.join(', ')}] using model ${model}...`);
     const { result, usedModel } = await generateContentWithFallbackChain({ prompt, model, useFallbackChain });
     const generatedJson = normalizeGeneratedCvJson(result);
+
+    // If caller wants to resolve templates after seeing the JSON (e.g. use LLM-suggested template)
+    const finalTemplates = resolveTemplates ? resolveTemplates(generatedJson) : effectiveTemplates;
+
     const baseName = `${generatedJson.cv_filename_prefix || 'cv'}_${Date.now()}`;
-    const artifacts = await renderAndGeneratePdfs({ generatedJson, templates, baseName });
+    const artifacts = await renderAndGeneratePdfs({ generatedJson, templates: finalTemplates, baseName });
 
     return {
         generatedJson,
@@ -1011,7 +1056,7 @@ async function handleGenerateCvRequest(req, res) {
             vacancy_text,
             custom_comment,
             model = 'gemini-3.1-pro-preview',
-            template = 'dark_calendly',
+            template,
             full_cv_text
         } = req.body;
 
@@ -1023,7 +1068,7 @@ async function handleGenerateCvRequest(req, res) {
             vacancyText: vacancy_text,
             customComment: custom_comment,
             model,
-            templates: [template],
+            resolveTemplates: (generatedJson) => [resolveTemplate(template, generatedJson)],
             fullCvText: full_cv_text
         });
 
@@ -1038,6 +1083,7 @@ async function handleGenerateCvRequest(req, res) {
             greeting_message: generation.generatedJson.greeting_message,
             match_rate: generation.generatedJson.match_rate ? parseInt(generation.generatedJson.match_rate) : null,
             top_tech_and_skills: generation.generatedJson.top_tech_and_skills,
+            why_answer: generation.generatedJson.why_answer,
             email: generation.generatedJson.email
         });
     } catch (error) {
@@ -1178,7 +1224,7 @@ const openApiSpec = {
                                 properties: {
                                     vacancy_text: { type: 'string' },
                                     custom_comment: { type: 'string' },
-                                    template: { type: 'string', enum: ['dark', 'light', 'dark_calendly'], default: 'dark_calendly' },
+                                    template: { type: 'string', enum: ['dark', 'light', 'dark_calendly', 'light_calendly', 'dark_deep_blue', 'dark_deep_blue_with_photo'], default: 'dark_calendly' },
                                     model: { type: 'string', default: 'gemini-3.1-pro-preview' },
                                     full_cv_text: { type: 'string' }
                                 },

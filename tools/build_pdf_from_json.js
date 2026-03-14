@@ -9,9 +9,13 @@ const OUTPUT_DIR = path.join(ROOT_DIR, 'cvs');
 
 function getTemplatePath(template) {
     const templateFileByName = {
-        dark: 'dark.html',
         light: 'light.html',
-        dark_calendly: 'dark_calendly.html'
+        light_calendly: 'light_calendly.html',
+        dark_deep_blue: 'dark_deep_blue.html',
+        dark_deep_blue_with_photo: 'dark_deep_blue_with_photo.html',
+        dark_deep_blue_with_photo_calendly: 'dark_deep_blue_with_photo_calendly.html',
+        dark_matrix: 'dark_matrix.html',
+        dark_matrix_calendly: 'dark_matrix_calendly.html'
     };
     const templateFile = templateFileByName[template];
     if (!templateFile) {
@@ -23,16 +27,17 @@ function getTemplatePath(template) {
 function parseCliArgs() {
     const inputPathArg = process.argv[2];
     const outputPdfArg = process.argv[3];
-    const templateArg = process.argv[4] || 'dark_calendly';
+    const VALID_TEMPLATES = ['light', 'light_calendly', 'dark_deep_blue', 'dark_deep_blue_with_photo', 'dark_deep_blue_with_photo_calendly', 'dark_matrix', 'dark_matrix_calendly'];
+    const templateArg = process.argv[4] || 'dark_matrix_calendly';
 
     if (!inputPathArg) {
         console.error('Usage: node tools/build_pdf_from_json.js <input_json_file> [output_pdf_file] [template]');
-        console.error('Example: node tools/build_pdf_from_json.js ./last.json ./cvs/manual_dark.pdf dark');
+        console.error('Example: node tools/build_pdf_from_json.js ./last.json ./cvs/manual_dark.pdf dark_matrix');
         process.exit(1);
     }
 
-    if (!['dark', 'light', 'dark_calendly'].includes(templateArg)) {
-        console.error('Template must be "dark", "light", or "dark_calendly"');
+    if (!VALID_TEMPLATES.includes(templateArg)) {
+        console.error(`Template must be one of: ${VALID_TEMPLATES.join(', ')}`);
         process.exit(1);
     }
 

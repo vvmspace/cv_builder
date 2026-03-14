@@ -12,12 +12,14 @@
         rel="stylesheet">
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-primary: #1a1a1a;
-            --text-secondary: #555555;
-            --tether-green: #007070;
-            --tether-neon: #008b8b;
-            --border-color: #e0e0e0;
+            --bg-color: #07080f;
+            --bg-surface: #0e1020;
+            --text-primary: #e8eaf2;
+            --text-secondary: #4a5080;
+            --accent: #2244aa;
+            --accent-bright: #3355cc;
+            --accent-dim: #111a44;
+            --border-color: #0e1020;
             --spacing-unit: 18px;
         }
 
@@ -34,7 +36,6 @@
             margin: 0;
             padding: 0;
             font-size: 11pt;
-            /* Readable print size */
             line-height: 1.5;
         }
 
@@ -44,21 +45,16 @@
             margin: 0 auto;
             background-color: var(--bg-color);
             padding: 40px;
-            /* Generous margins */
             position: relative;
         }
 
-        /* Subtle Grid for Tech Feel */
         .a4-page::before {
             content: " ";
             position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
+            top: 0; left: 0; bottom: 0; right: 0;
             background-image:
-                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+                linear-gradient(rgba(34, 68, 170, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 68, 170, 0.05) 1px, transparent 1px);
             background-size: 20px 20px;
             pointer-events: none;
             z-index: 0;
@@ -71,17 +67,22 @@
 
         /* --- Header --- */
         header {
-            border-bottom: 2px solid var(--tether-green);
+            border-bottom: 2px solid var(--accent-dim);
             padding-bottom: 20px;
             margin-bottom: 25px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .header-left {
+            flex: 1;
         }
 
         .header-left h1 {
             font-family: 'JetBrains Mono', monospace;
-            color: var(--text-primary);
+            color: #fff;
             margin: 0 0 5px 0;
             font-size: 24pt;
             text-transform: uppercase;
@@ -90,10 +91,30 @@
 
         .header-left h2 {
             font-family: 'JetBrains Mono', monospace;
-            color: var(--tether-green);
+            color: var(--accent-bright);
             margin: 0;
             font-size: 14pt;
             font-weight: 500;
+        }
+
+        /* --- Photo --- */
+        .header-photo {
+            order: -1;
+            flex-shrink: 0;
+            width: 90px;
+            height: 90px;
+            border-radius: 0;
+            overflow: hidden;
+            border: 2px solid #000;
+            box-shadow: none;
+        }
+
+        .header-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
         }
 
         .header-right {
@@ -102,6 +123,7 @@
             font-size: 9pt;
             color: var(--text-secondary);
             line-height: 1.4;
+            flex-shrink: 0;
         }
 
         .header-right a {
@@ -121,18 +143,16 @@
             width: 11px;
             height: 11px;
             flex-shrink: 0;
-            stroke: var(--tether-green);
+            stroke: var(--accent-bright);
         }
 
         /* --- Sections --- */
-        section {
-            margin-bottom: 25px;
-        }
+        section { margin-bottom: 25px; }
 
         h3 {
             font-family: 'JetBrains Mono', monospace;
             font-size: 12pt;
-            color: var(--tether-neon);
+            color: var(--accent-bright);
             text-transform: uppercase;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 5px;
@@ -140,203 +160,64 @@
             letter-spacing: 1px;
         }
 
-        /* --- Summary --- */
-        .summary p {
-            margin: 0;
-            color: var(--text-primary);
-            text-align: justify;
-        }
+        .summary p { margin: 0; color: #c0c4d8; text-align: justify; }
 
-        /* --- Skills --- */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            /* 4 Columns */
-            gap: 15px;
-        }
+        .skills-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
 
         .skill-col h4 {
-            color: var(--tether-green);
+            color: var(--accent-bright);
             margin: 0 0 8px 0;
             font-size: 10pt;
             text-transform: uppercase;
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .skill-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            font-size: 9.5pt;
-            color: var(--text-primary);
-        }
+        .skill-list { list-style: none; padding: 0; margin: 0; font-size: 9.5pt; color: #9098b8; }
+        .skill-list li { margin-bottom: 3px; }
 
-        .skill-list li {
-            margin-bottom: 3px;
-        }
+        .job-item { margin-bottom: 25px; padding-top: 25px; }
 
-        /* --- Experience --- */
-        .job-item {
-            margin-bottom: 25px;
-            padding-top: 25px;
-        }
+        .job-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
 
-        .job-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 5px;
-        }
+        .job-title { font-size: 13pt; font-weight: 700; color: #fff; }
+        .job-title span { color: var(--accent-bright); font-family: 'JetBrains Mono', monospace; font-weight: 400; }
 
-        .job-title {
-            font-size: 13pt;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
+        .job-meta { font-family: 'JetBrains Mono', monospace; font-size: 10pt; color: var(--text-secondary); text-align: right; }
 
-        .job-title span {
-            color: var(--tether-green);
-            /* Company Name */
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 400;
-        }
+        .job-tags { font-family: 'JetBrains Mono', monospace; font-size: 8pt; margin-top: 5px; display: flex; gap: 6px; }
 
-        .job-meta {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10pt;
-            color: var(--text-secondary);
-            text-align: right;
-        }
+        .tech-tag { color: var(--accent-bright); background: rgba(34, 68, 170, 0.18); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 
-        .job-tags {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 8pt;
-            margin-top: 5px;
-            display: flex;
-            gap: 6px;
-        }
+        .job-desc { margin: 0; padding-left: 15px; }
+        .job-desc li { margin-bottom: 6px; color: #c0c4d8; padding-left: 5px; list-style-type: none; position: relative; }
+        .job-desc li::before { content: "›"; position: absolute; left: -15px; color: var(--accent-bright); font-weight: bold; }
+        .job-desc strong, .job-desc b, strong, b { color: #fff; font-weight: 600; }
+        em, i { color: var(--accent-bright); font-style: normal; }
 
-        .tech-tag {
-            color: var(--tether-neon);
-            background: rgba(0, 139, 139, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
+        .edu-lang-row { display: flex; gap: 40px; }
+        .compact-item { display: flex; gap: 10px; align-items: baseline; color: #9098b8; }
+        .compact-label { color: var(--accent-bright); font-family: 'JetBrains Mono', monospace; font-size: 9pt; min-width: 120px; }
 
-        .job-desc {
-            margin: 0;
-            padding-left: 15px;
-        }
+        .footer { margin-top: 40px; border-top: 1px dashed var(--border-color); padding-top: 10px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8pt; color: #1a1e38; }
 
-        .job-desc li {
-            margin-bottom: 6px;
-            color: var(--text-primary);
-            padding-left: 5px;
-            list-style-type: none;
-            /* Custom bullet */
-            position: relative;
-        }
-
-        .job-desc li::before {
-            content: "›";
-            position: absolute;
-            left: -15px;
-            color: var(--tether-green);
-            font-weight: bold;
-        }
-
-        .job-desc strong,
-        .job-desc b,
-        strong,
-        b {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        em,
-        i {
-            color: var(--tether-green);
-            font-style: normal;
-        }
-
-        /* --- Education & Languages --- */
-        .edu-lang-row {
-            display: flex;
-            gap: 40px;
-        }
-
-        .compact-item {
-            display: flex;
-            gap: 10px;
-            align-items: baseline;
-            color: var(--text-primary);
-        }
-
-        .compact-label {
-            color: var(--tether-green);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9pt;
-            min-width: 120px;
-        }
-
-        /* --- Footer --- */
-        .footer {
-            margin-top: 40px;
-            border-top: 1px dashed var(--border-color);
-            padding-top: 10px;
-            text-align: center;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 8pt;
-            color: #666;
-        }
-
-        /* --- Print Optimizations --- */
         @media print {
-            body {
-                background-color: var(--bg-color);
-                /* Puppeteer handles this */
-            }
-
-            .a4-page {
-                width: 100%;
-                margin: 0;
-                padding: 15mm;
-                border: none;
-            }
-
-            /* Break Control */
-            h3,
-            .skills-grid,
-            li {
-                page-break-inside: avoid;
-            }
-
-            .job-item {
-                page-break-inside: avoid;
-                margin-bottom: 15px;
-                /* Reduced from 20px */
-            }
-
-            .job-desc li {
-                /* Allow list items to break if absolutely necessary, but prefer not */
-                page-break-inside: auto;
-            }
-
-            section {
-                /* Allow sections to split across pages */
-                page-break-inside: auto;
-            }
+            body { background-color: var(--bg-color); }
+            .a4-page { width: 100%; margin: 0; padding: 15mm; border: none; }
+            h3, .skills-grid, li { page-break-inside: avoid; }
+            .job-item { page-break-inside: avoid; margin-bottom: 15px; }
+            .job-desc li { page-break-inside: auto; }
+            section { page-break-inside: auto; }
         }
     </style>
 </head>
 
 <body>
-
     <div class="a4-page">
         <div class="content">
-            <!-- Header -->
             <header>
+                <div class="header-photo">
+                    <img src="../templates/photos/ava.png" alt="photo">
+                </div>
                 <div class="header-left">
                     <h1>%name%</h1>
                     <h2>%role%</h2>
@@ -361,15 +242,11 @@
                 </div>
             </header>
 
-            <!-- Summary -->
             <section class="summary">
                 <h3>Professional Objective</h3>
-                <p>
-                    %professional_objective%
-                </p>
+                <p>%professional_objective%</p>
             </section>
 
-            <!-- Skills (Categorized) -->
             <section class="skills">
                 <h3>Technical Stack</h3>
                 <div class="skills-grid">
@@ -386,7 +263,6 @@
                 </div>
             </section>
 
-            <!-- Experience -->
             <section class="experience">
                 <h3>Professional Experience</h3>
                 <!-- SECTION: experience -->
@@ -409,17 +285,14 @@
                 <!-- END SECTION: experience -->
             </section>
 
-            <!-- Education & Languages -->
             <section class="edu-lang">
                 <h3>Education & Languages</h3>
-
                 <div class="edu-lang-row" style="margin-bottom: 10px;">
                     <div class="compact-item">
                         <div class="compact-label">EDUCATION</div>
                         <div>%education%</div>
                     </div>
                 </div>
-
                 <div class="edu-lang-row">
                     <div class="compact-item">
                         <div class="compact-label">LANGUAGES</div>
@@ -433,7 +306,5 @@
             </div>
         </div>
     </div>
-
 </body>
-
 </html>

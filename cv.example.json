@@ -135,5 +135,7 @@
     "salary_expectation": "salary expectation if provided in vacancy text",
     "remote": "Hybrid/Remote/On-site if provided in vacancy text",
     "match_rate": "required: honestly rate match between original full cv and vacancy text in integer percentage: 0..100",
-    "top_tech_and_skills": "top 5 from vacancy, comma separated, like: Nuxt.js, TypeScript, Rust, AI, Blockchain, High-Load"
+    "why_answer": "Why are you specifically interested in this company/role? (1-3 sentences)",
+    "top_tech_and_skills": "top 5 from vacancy, comma separated, like: Nuxt.js, TypeScript, Rust, AI, Blockchain, High-Load",
+    "template": "one of: 'dark_deep_blue_with_photo_calendly', 'dark_matrix_calendly', 'light_calendly' best fits for vacancy description"
 }
