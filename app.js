@@ -370,29 +370,15 @@ async function generateContentWithFallbackChain({
 const DEFAULT_TEMPLATE = process.env.DEFAULT_TEMPLATE || 'dark_matrix';
 
 function getTemplatePath(template) {
-    const templateFileByName = {
-        light: 'light.html',
-        light_calendly: 'light_calendly.html',
-        dark_deep_blue: 'dark_deep_blue.html',
-        dark_deep_blue_with_photo: 'dark_deep_blue_with_photo.html',
-        dark_deep_blue_with_photo_calendly: 'dark_deep_blue_with_photo_calendly.html',
-        dark_matrix: 'dark_matrix.html',
-        dark_matrix_calendly: 'dark_matrix_calendly.html'
-    };
-    const templateFile = templateFileByName[template];
-    if (!templateFile) {
+    const filePath = path.join(TEMPLATES_DIR, `${template}.html`);
+    if (!fs.existsSync(filePath)) {
         throw new Error(`Unsupported template: ${template}`);
     }
-    return path.join(TEMPLATES_DIR, templateFile);
+    return filePath;
 }
 
 function templateExists(template) {
-    try {
-        const p = getTemplatePath(template);
-        return fs.existsSync(p);
-    } catch {
-        return false;
-    }
+    return fs.existsSync(path.join(TEMPLATES_DIR, `${template}.html`));
 }
 
 function resolveTemplate(requestedTemplate, generatedJson) {
@@ -591,11 +577,14 @@ async function processOneCreatedVacancy() {
         const generation = await generateCvArtifacts({
             vacancyText: String(vacancy.vacancy_text),
             customComment: String(vacancy.comment_text || ''),
-            templates: ['dark_calendly', 'light'],
+            resolveTemplates: (generatedJson) => [
+                resolveTemplate('dark', generatedJson),
+                resolveTemplate('light', generatedJson)
+            ],
             useFallbackChain: true
         });
 
-        const darkArtifact = generation.artifacts.find((a) => a.template === 'dark_calendly');
+        const darkArtifact = generation.artifacts.find((a) => a.template !== 'light');
         const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
         const primaryArtifact = darkArtifact || lightArtifact || generation.artifacts[0];
         if (!primaryArtifact) {
@@ -957,7 +946,10 @@ async function processTelegramUpdate(update) {
     const generation = await generateCvArtifacts({
         vacancyText,
         customComment,
-        templates: ['dark_calendly', 'light'],
+        resolveTemplates: (generatedJson) => [
+            resolveTemplate('dark', generatedJson),
+            resolveTemplate('light', generatedJson)
+        ],
         useFallbackChain: true
     });
 
@@ -979,7 +971,7 @@ async function processTelegramUpdate(update) {
     const commentPath = path.join(CV_DIR, commentFilename);
     fs.writeFileSync(commentPath, commentText);
 
-    const darkArtifact = generation.artifacts.find((a) => a.template === 'dark_calendly');
+    const darkArtifact = generation.artifacts.find((a) => a.template !== 'light');
     const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
 
     const summary = buildTelegramSummaryMessage({
