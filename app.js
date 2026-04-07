@@ -24,11 +24,14 @@ const LAST_JSON_PATH = isNetlifyRuntime()
     ? path.join('/tmp', 'last.json')
     : path.join(__dirname, 'last.json');
 const TEMPLATES_DIR = path.join(__dirname, 'templates');
+const HAS_GEMMA = Boolean(process.env.GEMMA_API_URL && process.env.GEMMA_API_KEY);
+const GEMMA_PRIMARY_MODEL = process.env.GEMMA_MODEL || 'gemma';
+const DEFAULT_MODEL = HAS_GEMMA ? GEMMA_PRIMARY_MODEL : 'gemini-3.1-pro-preview';
 
 fs.mkdirSync(CV_DIR, { recursive: true });
 
 let mongoClientPromise = null;
-const BOT_WORKER_MODEL_CHAIN = [
+const BASE_BOT_WORKER_MODEL_CHAIN = [
     'gemini-3.1-pro-preview',
     'gemini-2.5-flash',
     'arcee-ai/trinity-large-preview:free',
@@ -38,6 +41,12 @@ const BOT_WORKER_MODEL_CHAIN = [
     'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
     'arcee-ai/trinity-mini:free',
 ];
+
+function getBotWorkerModelChain() {
+    return HAS_GEMMA
+        ? [GEMMA_PRIMARY_MODEL, ...BASE_BOT_WORKER_MODEL_CHAIN]
+        : [...BASE_BOT_WORKER_MODEL_CHAIN];
+}
 
 async function getVacanciesCollection() {
     const connectionString = process.env.MONGODB_CONNECTION_STRING;
@@ -330,7 +339,7 @@ async function generateContentWithFallbackChain({
         };
     }
 
-    let modelsToTry = [...BOT_WORKER_MODEL_CHAIN];
+    let modelsToTry = getBotWorkerModelChain();
 
     if (model && modelsToTry.includes(model)) {
         modelsToTry = [model, ...modelsToTry.filter((m) => m !== model)];
@@ -455,7 +464,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
 async function generateCvArtifacts({
     vacancyText,
     customComment,
-    model = 'gemini-3.1-pro-preview',
+    model = DEFAULT_MODEL,
     templates = null,
     resolveTemplates = null,
     fullCvText,
@@ -495,7 +504,7 @@ async function generateTelegramComment({
     customComment,
     fullCv,
     generatedCvJson,
-    model = 'gemini-3.1-pro-preview',
+    model = DEFAULT_MODEL,
     useFallbackChain = false
 }) {
     const prefix = generatedCvJson && generatedCvJson.cv_filename_prefix
@@ -1022,8 +1031,10 @@ async function processTelegramUpdate(update) {
 // Initialize LLM Client
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-if (!geminiApiKey && !openRouterApiKey && process.env.MOCK_LLM !== 'true') {
-    console.error('Error: Neither GEMINI_API_KEY nor OPENROUTER_API_KEY found in environment variables.');
+const gemmaApiUrl = process.env.GEMMA_API_URL;
+const gemmaApiKey = process.env.GEMMA_API_KEY;
+if (!geminiApiKey && !openRouterApiKey && !HAS_GEMMA && process.env.MOCK_LLM !== 'true') {
+    console.error('Error: no LLM credentials found. Configure GEMMA_API_URL+GEMMA_API_KEY, GEMINI_API_KEY, or OPENROUTER_API_KEY.');
     process.exit(1);
 }
 
@@ -1040,14 +1051,14 @@ const llmClient = process.env.MOCK_LLM === 'true'
             };
         }
     }
-    : new UnifiedLLMClient(geminiApiKey, openRouterApiKey);
+    : new UnifiedLLMClient(geminiApiKey, openRouterApiKey, gemmaApiUrl, gemmaApiKey);
 
 async function handleGenerateCvRequest(req, res) {
     try {
         const {
             vacancy_text,
             custom_comment,
-            model = 'gemini-3.1-pro-preview',
+            model = DEFAULT_MODEL,
             template,
             full_cv_text
         } = req.body;
@@ -1217,7 +1228,7 @@ const openApiSpec = {
                                     vacancy_text: { type: 'string' },
                                     custom_comment: { type: 'string' },
                                     template: { type: 'string', enum: ['dark', 'light', 'dark_calendly', 'light_calendly', 'dark_deep_blue', 'dark_deep_blue_with_photo'], default: 'dark_calendly' },
-                                    model: { type: 'string', default: 'gemini-3.1-pro-preview' },
+                                    model: { type: 'string', default: DEFAULT_MODEL },
                                     full_cv_text: { type: 'string' }
                                 },
                                 required: ['vacancy_text']

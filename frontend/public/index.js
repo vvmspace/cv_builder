@@ -1,5 +1,6 @@
 (function setCvBuilderModels(globalScope) {
   globalScope.CV_BUILDER_MODELS = [
+    { value: 'gemma', label: 'Gemma (Custom API)' },
     { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
     { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
     { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview' },

@@ -260,23 +260,113 @@ class OpenRouterClient extends LLMClient {
     }
 }
 
-class UnifiedLLMClient extends LLMClient {
-    constructor(geminiKey, openRouterKey) {
-        super("unified");
-        this.geminiClient = geminiKey ? new GeminiClient(geminiKey) : null;
-        this.openRouterClient = openRouterKey ? new OpenRouterClient(openRouterKey) : null;
+class GemmaClient extends LLMClient {
+    constructor(apiUrl, apiKey) {
+        super(apiKey);
+        this.baseUrl = apiUrl;
+        this.defaultModel = process.env.GEMMA_MODEL || 'gemma';
     }
 
-    async generateContent(prompt, model) {
-        const isGemini = !model || model.startsWith('gemini');
-        if (isGemini) {
-            if (!this.geminiClient) throw new Error('Gemini API key not configured');
-            return this.geminiClient.generateContent(prompt, model);
-        } else {
-            if (!this.openRouterClient) throw new Error('OpenRouter API key not configured');
-            return this.openRouterClient.generateContent(prompt, model);
+    _resolveUrl() {
+        const normalized = String(this.baseUrl || '').trim().replace(/\/+$/, '');
+        if (!normalized) {
+            throw new Error('Gemma API URL not configured');
         }
+
+        if (/\/chat\/completions$/i.test(normalized)) {
+            return normalized;
+        }
+
+        if (/\/v1$/i.test(normalized)) {
+            return `${normalized}/chat/completions`;
+        }
+
+        return `${normalized}/v1/chat/completions`;
+    }
+
+    async generateContent(prompt, model = this.defaultModel) {
+        const payload = {
+            model: model || this.defaultModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7
+        };
+
+        return new Promise((resolve, reject) => {
+            const url = new URL(this._resolveUrl());
+            const req = https.request(url, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.apiKey}`,
+                    'x-api-key': this.apiKey,
+                    'Content-Type': 'application/json'
+                }
+            }, (res) => {
+                let data = '';
+                res.on('data', (chunk) => { data += chunk; });
+                res.on('end', () => {
+                    try {
+                        if (res.statusCode < 200 || res.statusCode >= 300) {
+                            reject(new Error(`Gemma API error: ${res.statusCode} ${data}`));
+                            return;
+                        }
+
+                        const response = JSON.parse(data);
+                        const text = response?.choices?.[0]?.message?.content;
+                        if (!text) {
+                            reject(new Error('Empty response from Gemma API'));
+                            return;
+                        }
+
+                        try {
+                            let jsonStr = text;
+                            const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                            if (match) {
+                                jsonStr = match[1];
+                            }
+                            resolve(JSON.parse(jsonStr));
+                        } catch (e) {
+                            resolve({ raw_text: text });
+                        }
+                    } catch (e) {
+                        reject(new Error(`Failed to parse Gemma response: ${e.message}`));
+                    }
+                });
+            });
+
+            req.on('error', (e) => reject(e));
+            req.write(JSON.stringify(payload));
+            req.end();
+        });
     }
 }
 
-module.exports = { GeminiClient, OpenRouterClient, UnifiedLLMClient };
+class UnifiedLLMClient extends LLMClient {
+    constructor(geminiKey, openRouterKey, gemmaApiUrl, gemmaApiKey) {
+        super("unified");
+        this.geminiClient = geminiKey ? new GeminiClient(geminiKey) : null;
+        this.openRouterClient = openRouterKey ? new OpenRouterClient(openRouterKey) : null;
+        this.gemmaClient = (gemmaApiUrl && gemmaApiKey) ? new GemmaClient(gemmaApiUrl, gemmaApiKey) : null;
+        this.defaultModel = this.gemmaClient ? (process.env.GEMMA_MODEL || 'gemma') : 'gemini-3.1-pro-preview';
+    }
+
+    async generateContent(prompt, model) {
+        const resolvedModel = model || this.defaultModel;
+        const isGemma = resolvedModel.startsWith('gemma');
+        const isGemini = resolvedModel.startsWith('gemini');
+
+        if (isGemma) {
+            if (!this.gemmaClient) throw new Error('Gemma API URL or key not configured');
+            return this.gemmaClient.generateContent(prompt, resolvedModel);
+        }
+
+        if (isGemini) {
+            if (!this.geminiClient) throw new Error('Gemini API key not configured');
+            return this.geminiClient.generateContent(prompt, resolvedModel);
+        }
+
+        if (!this.openRouterClient) throw new Error('OpenRouter API key not configured');
+        return this.openRouterClient.generateContent(prompt, resolvedModel);
+    }
+}
+
+module.exports = { GeminiClient, OpenRouterClient, GemmaClient, UnifiedLLMClient };

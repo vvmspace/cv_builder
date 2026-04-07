@@ -49,7 +49,11 @@ Service for generating tailored CVs (`HTML` + `PDF`) from vacancy text, with Tel
 
 Required for real generation:
 
-- `GEMINI_API_KEY` and/or `OPENROUTER_API_KEY`
+- `GEMMA_API_URL` + `GEMMA_API_KEY`, or `GEMINI_API_KEY`, or `OPENROUTER_API_KEY`
+
+Optional for Gemma:
+
+- `GEMMA_MODEL` (default: `gemma`)
 
 Telegram:
 
@@ -168,14 +172,15 @@ On failure:
 
 Priority order:
 
-1. `gemini-3.1-pro-preview`
-2. `gemini-2.5-flash`
-3. `openrouter/free`
-4. `arcee-ai/trinity-large-preview:free`
-5. `nvidia/llama-nemotron-embed-vl-1b-v2:free`
-6. `cognitivecomputations/dolphin-mistral-24b-venice-edition:free`
-7. `arcee-ai/trinity-mini:free`
-8. `gemini-2.0-flash`
+1. `gemma` (or `GEMMA_MODEL`) when `GEMMA_API_URL` + `GEMMA_API_KEY` are set
+2. `gemini-3.1-pro-preview`
+3. `gemini-2.5-flash`
+4. `openrouter/free`
+5. `arcee-ai/trinity-large-preview:free`
+6. `nvidia/llama-nemotron-embed-vl-1b-v2:free`
+7. `cognitivecomputations/dolphin-mistral-24b-venice-edition:free`
+8. `arcee-ai/trinity-mini:free`
+9. `gemini-2.0-flash`
 
 If `MONGODB_CONNECTION_STRING` is set:
 
