@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { UnifiedLLMClient } = require('../tools/llm_client');
+const { UnifiedLLMClient } = require('abstractai');
 
 test('UnifiedLLMClient uses Gemma as default when Gemma is configured', async () => {
     const client = new UnifiedLLMClient('gemini-key', 'openrouter-key', 'https://gemma.local', 'gemma-key');
@@ -31,6 +31,21 @@ test('UnifiedLLMClient routes gemini models to Gemini client', async () => {
     const result = await client.generateContent('test prompt', 'gemini-2.5-flash');
     assert.deepEqual(result, { provider: 'gemini' });
     assert.equal(geminiModel, 'gemini-2.5-flash');
+});
+
+test('UnifiedLLMClient routes gemma-4 models to Gemini client (Google API)', async () => {
+    const client = new UnifiedLLMClient('gemini-key', 'openrouter-key', 'https://gemma.local', 'gemma-key');
+
+    let geminiModel = null;
+    // eslint-disable-next-line no-param-reassign
+    client.geminiClient.generateContent = async (prompt, model) => {
+        geminiModel = model;
+        return { provider: 'gemini' };
+    };
+
+    const result = await client.generateContent('test prompt', 'gemma-4-27b-it');
+    assert.deepEqual(result, { provider: 'gemini' });
+    assert.equal(geminiModel, 'gemma-4-27b-it');
 });
 
 test('UnifiedLLMClient routes non-gemini/gemma models to OpenRouter client', async () => {

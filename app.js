@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const cheerio = require('cheerio');
 const swaggerUi = require('swagger-ui-express');
 const { Telegram } = require('telegraf');
-const { UnifiedLLMClient } = require('./tools/llm_client');
+const { UnifiedLLMClient } = require('abstractai');
 const { render } = require('./tools/template_renderer');
 const { launchBrowser, isNetlifyRuntime } = require('./runtime');
 const { MongoClient } = require('mongodb');
@@ -33,13 +33,13 @@ fs.mkdirSync(CV_DIR, { recursive: true });
 let mongoClientPromise = null;
 const BASE_BOT_WORKER_MODEL_CHAIN = [
     'gemini-3.1-pro-preview',
+    'gemma-4-31b-it',
+    'gemma-4-26b-a4b-it',
     'gemini-2.5-flash',
-    'arcee-ai/trinity-large-preview:free',
     'openrouter/free',
     'gemini-2.0-flash',
     'nvidia/llama-nemotron-embed-vl-1b-v2:free',
-    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
-    'arcee-ai/trinity-mini:free',
+    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free'
 ];
 
 function getBotWorkerModelChain() {
@@ -317,7 +317,8 @@ function normalizeGeneratedCvJson(generated) {
     }
 
     if (generated.raw_text) {
-        throw new Error('LLM returned non-JSON output; expected CV JSON');
+        const snippet = String(generated.raw_text).substring(0, 500);
+        throw new Error(`LLM returned non-JSON output; expected CV JSON. Raw output begins with: "${snippet}..."`);
     }
 
     if (typeof generated !== 'object' || Array.isArray(generated)) {
@@ -1033,25 +1034,13 @@ const geminiApiKey = process.env.GEMINI_API_KEY;
 const openRouterApiKey = process.env.OPENROUTER_API_KEY;
 const gemmaApiUrl = process.env.GEMMA_API_URL;
 const gemmaApiKey = process.env.GEMMA_API_KEY;
-if (!geminiApiKey && !openRouterApiKey && !HAS_GEMMA && process.env.MOCK_LLM !== 'true') {
+if (!geminiApiKey && !openRouterApiKey && !HAS_GEMMA) {
     console.error('Error: no LLM credentials found. Configure GEMMA_API_URL+GEMMA_API_KEY, GEMINI_API_KEY, or OPENROUTER_API_KEY.');
     process.exit(1);
 }
 
-const llmClient = process.env.MOCK_LLM === 'true'
-    ? {
-        generateContent: async (prompt, model) => {
-            if (prompt.includes('Compare FULL CV vs GENERATED CV')) {
-                return { comment_markdown: 'Mock Telegram Comment' };
-            }
-            return {
-                "name": "Mock Name",
-                "experience": ["Mock Experience"],
-                "comment_for_user": "Mock comment for user"
-            };
-        }
-    }
-    : new UnifiedLLMClient(geminiApiKey, openRouterApiKey, gemmaApiUrl, gemmaApiKey);
+const llmClient = new UnifiedLLMClient(geminiApiKey, openRouterApiKey, gemmaApiUrl, gemmaApiKey);
+
 
 async function handleGenerateCvRequest(req, res) {
     try {

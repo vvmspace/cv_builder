@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 
 process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'test-key';
 
-const { GeminiClient } = require('../tools/llm_client');
+const { GeminiClient } = require('abstractai');
 
 test('GeminiClient uses preferred model when successful', async () => {
     const client = new GeminiClient('test-key');

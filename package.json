@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "node server.js",
-    "start:mock": "MOCK_LLM=true MOCK_TELEGRAM=true node server.js",
+
     "dev": "node --watch server.js",
     "dev:frontend": "nuxi dev frontend",
     "build:frontend": "nuxi generate frontend && rm -rf public && mkdir -p public && cp -R frontend/.output/public/. public/",
@@ -12,9 +12,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@sparticuz/chromium": "^143.0.4",
+    "abstractai": "file:./abstractai",
     "body-parser": "^2.2.2",
     "cheerio": "^1.2.0",
-    "swagger-ui-express": "^5.0.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mongodb": "^6.21.0",
@@ -22,6 +22,7 @@
     "puppeteer": "^24.37.2",
     "puppeteer-core": "^24.37.5",
     "serverless-http": "^4.0.0",
+    "swagger-ui-express": "^5.0.1",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
