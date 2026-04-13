@@ -156,7 +156,7 @@ Information Security, Moscow Technological University
 
 ## Contacts:
 
-+37498330380
-https://t.me/vvmspace
-vvmyagdeev@gmail.com
-https://github.com/vvmspace
+Phone/Telegram/Whatsapp: +37498330380
+Telegram: https://t.me/vvmspace
+E-mail:"vvmyagdeev@gmail.com" <vvmyagdeev+company_role@gmail.com>
+Github: https://github.com/vvmspace
