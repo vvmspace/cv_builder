@@ -176,11 +176,9 @@ Priority order:
 2. `gemini-3.1-pro-preview`
 3. `gemini-2.5-flash`
 4. `openrouter/free`
-5. `arcee-ai/trinity-large-preview:free`
+5. `gemini-2.0-flash`
 6. `nvidia/llama-nemotron-embed-vl-1b-v2:free`
 7. `cognitivecomputations/dolphin-mistral-24b-venice-edition:free`
-8. `arcee-ai/trinity-mini:free`
-9. `gemini-2.0-flash`
 
 If `MONGODB_CONNECTION_STRING` is set:
 
