@@ -18,7 +18,24 @@ function parseLLMTextResponse(content, providerName) {
         if (match) {
             jsonStr = match[1];
         }
-        return JSON.parse(jsonStr);
+        try {
+            return JSON.parse(jsonStr);
+        }
+        catch (firstErr) {
+            // If direct parse fails, try to find the first '{' and last '}'
+            const startIdx = jsonStr.indexOf('{');
+            const endIdx = jsonStr.lastIndexOf('}');
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                const potentialJson = jsonStr.substring(startIdx, endIdx + 1);
+                try {
+                    return JSON.parse(potentialJson);
+                }
+                catch (secondErr) {
+                    throw firstErr; // Throw the original error if this also fails
+                }
+            }
+            throw firstErr;
+        }
     }
     catch {
         return { raw_text: text };

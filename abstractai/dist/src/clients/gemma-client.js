@@ -168,7 +168,7 @@ class GemmaClient extends llm_client_1.LLMClient {
         const payload = {
             model: model || this.defaultModel,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7
+            temperature: 0.1
         };
         if (this.transport === 'ws') {
             return this._generateViaWebSocket(payload);

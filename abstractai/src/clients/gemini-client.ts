@@ -1,6 +1,7 @@
 import https from 'https';
 import { URL } from 'url';
 import { LLMClient } from '../llm-client';
+import { parseLLMTextResponse } from '../utils/parse-llm-text-response';
 import type { JsonObject, RateLimitError } from '../types';
 
 export class GeminiClient extends LLMClient {
@@ -30,13 +31,24 @@ export class GeminiClient extends LLMClient {
         const url = new URL(`${this.baseUrl}/${model}:${method}`);
         url.searchParams.append('key', this._getRandomApiKey());
 
+        const isGemma = model && model.toLowerCase().includes('gemma');
+        const systemInstruction = 'Return valid JSON only. Do not include markdown formatting, preambles, or explanations. Start with "{" and end with "}".';
+        
+        // For Gemma models, we also prepend instructions to the user prompt since they often ignore system_instruction
+        const effectivePrompt = isGemma 
+            ? `STRICT: RETURN ONLY VALID JSON. NO TEXT BEFORE OR AFTER.\n\n${prompt}\n\nSTRICT: JSON ONLY.`
+            : prompt;
+
         const payload = {
+            system_instruction: {
+                parts: [{ text: systemInstruction }]
+            },
             contents: [{
-                parts: [{ text: prompt }]
+                parts: [{ text: effectivePrompt }]
             }],
             generationConfig: {
                 response_mime_type: 'application/json',
-                temperature: 0.7
+                temperature: 0.1
             }
         };
 
@@ -108,11 +120,7 @@ export class GeminiClient extends LLMClient {
                             return;
                         }
 
-                        try {
-                            resolve(JSON.parse(collectedText) as JsonObject);
-                        } catch {
-                            resolve({ raw_text: collectedText });
-                        }
+                        resolve(parseLLMTextResponse(collectedText, `Google AI/Gemini (${model})`));
                     } catch (e) {
                         reject(new Error(`Failed to parse response: ${(e as Error).message}`));
                     }

@@ -198,7 +198,7 @@ export class GemmaClient extends LLMClient {
         const payload = {
             model: model || this.defaultModel,
             messages: [{ role: 'user' as const, content: prompt }],
-            temperature: 0.7
+            temperature: 0.1
         };
 
         if (this.transport === 'ws') {

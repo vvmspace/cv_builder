@@ -317,7 +317,8 @@ function normalizeGeneratedCvJson(generated) {
     }
 
     if (generated.raw_text) {
-        throw new Error('LLM returned non-JSON output; expected CV JSON');
+        const snippet = String(generated.raw_text).substring(0, 500);
+        throw new Error(`LLM returned non-JSON output; expected CV JSON. Raw output begins with: "${snippet}..."`);
     }
 
     if (typeof generated !== 'object' || Array.isArray(generated)) {

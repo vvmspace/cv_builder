@@ -7,6 +7,7 @@ exports.GeminiClient = void 0;
 const https_1 = __importDefault(require("https"));
 const url_1 = require("url");
 const llm_client_1 = require("../llm-client");
+const parse_llm_text_response_1 = require("../utils/parse-llm-text-response");
 class GeminiClient extends llm_client_1.LLMClient {
     constructor(apiKey) {
         super(apiKey);
@@ -28,13 +29,22 @@ class GeminiClient extends llm_client_1.LLMClient {
         const method = isStreamingOnlyModel ? 'streamGenerateContent' : 'generateContent';
         const url = new url_1.URL(`${this.baseUrl}/${model}:${method}`);
         url.searchParams.append('key', this._getRandomApiKey());
+        const isGemma = model && model.toLowerCase().includes('gemma');
+        const systemInstruction = 'Return valid JSON only. Do not include markdown formatting, preambles, or explanations. Start with "{" and end with "}".';
+        // For Gemma models, we also prepend instructions to the user prompt since they often ignore system_instruction
+        const effectivePrompt = isGemma
+            ? `STRICT: RETURN ONLY VALID JSON. NO TEXT BEFORE OR AFTER.\n\n${prompt}\n\nSTRICT: JSON ONLY.`
+            : prompt;
         const payload = {
+            system_instruction: {
+                parts: [{ text: systemInstruction }]
+            },
             contents: [{
-                    parts: [{ text: prompt }]
+                    parts: [{ text: effectivePrompt }]
                 }],
             generationConfig: {
                 response_mime_type: 'application/json',
-                temperature: 0.7
+                temperature: 0.1
             }
         };
         return new Promise((resolve, reject) => {
@@ -100,12 +110,7 @@ class GeminiClient extends llm_client_1.LLMClient {
                             reject(new Error('Unexpected response structure from Google AI/Gemini API'));
                             return;
                         }
-                        try {
-                            resolve(JSON.parse(collectedText));
-                        }
-                        catch {
-                            resolve({ raw_text: collectedText });
-                        }
+                        resolve((0, parse_llm_text_response_1.parseLLMTextResponse)(collectedText, `Google AI/Gemini (${model})`));
                     }
                     catch (e) {
                         reject(new Error(`Failed to parse response: ${e.message}`));
