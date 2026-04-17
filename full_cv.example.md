@@ -79,7 +79,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 
 
 
-### Digital twins, AI-assistants and Chatbots, FrieNDA (2024-2026):
+### Digital twins, AI-assistants and Chatbots, Doppelgangers.AI (2024-2026):
 *Lead Core Developer / Acting CTO*
 
 (best project - when interviewer will ask about last favorite project - I will tell about this one)
@@ -94,7 +94,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Monitoring: Sentry, Grafana, Prometheus
 *(can’t tell too much, FrieNDA)*
 
-### OpenAI Based Matching System (2022~2024):
+### AI Based Matching System, Noveo Group (2022~2024):
 
 - Joined as a senior backend/fullstack developer and played a pivotal role from research to planning and development, focusing on creating a matching system based on OpenAI Embeddings and GPT API (it was a rocket science at this moment).
 - During a project crisis caused by management changes, took ownership of the AI top-priority feature, decomposed it into a practical delivery plan when almost no domain experts were available, aligned the roadmap to a customer-approved 3-month estimate, delivered the core implementation in 1.5 months, and completed the follow-up improvements.
@@ -108,13 +108,13 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Technologies: TypeScript, NodeJS, NestJS, Kubernetes, tilt, Golang, Apache Kafka, gRPC
 *(I don’t remember everything to be honest)*
 
-### Digital Document Exchange (2020~2022):
+### Digital Document Exchange, Andersen Lab (2020~2022):
 *one of my favourites*
 - Developed a hybrid SaaS platform offering e-signatures, eKYC, and digital contract management services, and focused on the integration with ML 3rd-party platforms for eKYC face validation.
 - Feature ownership: face recognition authorisation for eKYC, access level control
 - Technologies: TypeScript, NodeJS, NestJS, PostgreSQL, Docker, Nginx, AWS, GraphQL.
 
-### Analog of Ethereum Cats on a specific blockchain (2018-2018, part-time):
+### Analog of Ethereum Cats on a specific blockchain, Minter Network (2018-2018, part-time):
 - Studied the ecosystem: Minting tokens, staking
 - Operations of assigning cats 🐈 in response to a transaction
 - "That tech guy"
@@ -126,7 +126,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Technologies: PHP, Laravel, Nuxt.js, Vue.js, SEO, 1C integration
 
 
-### Cross-Gambling Loyalty Program for Restaurants (2017~2018):
+### Cross-Gambling Loyalty Program for Restaurants, Checkpot.fun (2017~2018):
 *Joined as a Node.js developer and quickly advanced to the position of Team Lead (or CTO).*
 
 - Successful local startup launch.
