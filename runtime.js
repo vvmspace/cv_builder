@@ -10,8 +10,10 @@ function isNetlifyRuntime() {
 async function launchBrowser() {
     if (!isNetlifyRuntime()) {
         return puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files']
+            headless: true,
+            pipe: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files', '--disable-dev-shm-usage', '--disable-gpu'],
+            timeout: 60000
         });
     }
 

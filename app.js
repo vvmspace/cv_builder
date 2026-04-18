@@ -420,7 +420,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
     const artifacts = [];
 
     try {
-        for (const template of templates) {
+        const generationPromises = templates.map(async (template) => {
             const templatePath = getTemplatePath(template);
             const htmlContent = render(templatePath, generatedJson);
             const htmlFilename = `${baseName}_${template}.html`;
@@ -445,7 +445,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
             });
             await page.close();
 
-            artifacts.push({
+            return {
                 template,
                 html_filename: htmlFilename,
                 pdf_filename: pdfFilename,
@@ -453,8 +453,11 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
                 pdf_path: pdfPath,
                 html_url: `/cvs/${htmlFilename}`,
                 pdf_url: `/cvs/${pdfFilename}`
-            });
-        }
+            };
+        });
+
+        const results = await Promise.all(generationPromises);
+        artifacts.push(...results);
     } finally {
         await browser.close();
     }
@@ -471,6 +474,8 @@ async function generateCvArtifacts({
     fullCvText,
     useFallbackChain = false
 }) {
+    console.time('cv:generate:total');
+    console.time('cv:generate:llm');
     const assets = getGenerationAssets(fullCvText);
     const prompt = buildCvPrompt({
         vacancyText,
@@ -484,12 +489,16 @@ async function generateCvArtifacts({
     console.log(`Calling LLM for templates [${effectiveTemplates.join(', ')}] using model ${model}...`);
     const { result, usedModel } = await generateContentWithFallbackChain({ prompt, model, useFallbackChain });
     const generatedJson = normalizeGeneratedCvJson(result);
+    console.timeEnd('cv:generate:llm');
 
     // If caller wants to resolve templates after seeing the JSON (e.g. use LLM-suggested template)
+    console.time('cv:generate:pdf');
     const finalTemplates = resolveTemplates ? resolveTemplates(generatedJson) : effectiveTemplates;
 
     const baseName = `${generatedJson.cv_filename_prefix || 'cv'}_${Date.now()}`;
     const artifacts = await renderAndGeneratePdfs({ generatedJson, templates: finalTemplates, baseName });
+    console.timeEnd('cv:generate:pdf');
+    console.timeEnd('cv:generate:total');
 
     return {
         generatedJson,
