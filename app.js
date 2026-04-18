@@ -420,7 +420,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
     const artifacts = [];
 
     try {
-        const generationPromises = templates.map(async (template) => {
+        for (const template of templates) {
             const templatePath = getTemplatePath(template);
             const htmlContent = render(templatePath, generatedJson);
             const htmlFilename = `${baseName}_${template}.html`;
@@ -431,7 +431,8 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
             fs.writeFileSync(htmlPath, htmlContent);
 
             const page = await browser.newPage();
-            await page.goto(`file://${htmlPath}`, { waitUntil: 'networkidle0' });
+            await page.goto(`file://${htmlPath}`, { waitUntil: 'networkidle2', timeout: 30000 }).catch(e => console.warn(`[WARN] page.goto timeout for ${template}:`, e.message));
+            
             await page.pdf({
                 path: pdfPath,
                 format: 'A4',
@@ -445,7 +446,7 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
             });
             await page.close();
 
-            return {
+            artifacts.push({
                 template,
                 html_filename: htmlFilename,
                 pdf_filename: pdfFilename,
@@ -453,11 +454,8 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
                 pdf_path: pdfPath,
                 html_url: `/cvs/${htmlFilename}`,
                 pdf_url: `/cvs/${pdfFilename}`
-            };
-        });
-
-        const results = await Promise.all(generationPromises);
-        artifacts.push(...results);
+            });
+        }
     } finally {
         await browser.close();
     }
