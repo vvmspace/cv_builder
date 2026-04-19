@@ -1,10 +1,10 @@
-# Vladimir V. Myagdeev. - Senior / Lead developer / AI/ML integrations
+# Vladimir Myagdeev. - Senior / Lead developer / AI/ML, Web3 integrations
 *Armenia, Yerevan*
 
 Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with experience in managing the entire project lifecycle. Strong as a developer, I strive to bring value to projects with my full range of skills. Experienced in Analytics/Management and Architecture/DevOps roles. Thrice held a position at the ~CTO level.
 
 ## Professional Summary:
-- 18+ years of programming experience, with 10+ years of commercial software development.
+- 20+ years of programming experience, with 10+ years of commercial software development.
 - Successfully launched 3 startups and integrated 2 commercial ML/AI solutions
 - I have been monitoring the growth of cryptocurrencies since 2014.
 - Passionate about innovative technologies, especially AI and Machine Learning, seeking to leverage extensive background in software development to create impactful solutions.
@@ -113,6 +113,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Developed a hybrid SaaS platform offering e-signatures, eKYC, and digital contract management services, and focused on the integration with ML 3rd-party platforms for eKYC face validation.
 - Feature ownership: face recognition authorisation for eKYC, access level control
 - Technologies: TypeScript, NodeJS, NestJS, PostgreSQL, Docker, Nginx, AWS, GraphQL, NATS.
+- Resource Manager with up to 8 people as the second role in Andersen Lab
 
 ### Analog of Ethereum Cats on a specific blockchain, Minter Network (2018-2018, part-time):
 - Studied the ecosystem: Minting tokens, staking
@@ -129,7 +130,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 ### Cross-Gambling Loyalty Program for Restaurants, Checkpot.fun (2017~2018):
 *Joined as a Node.js developer and quickly advanced to the position of Team Lead (or CTO).*
 
-- Successful local startup launch.
+- Successful local startup launch: 5k+ online users performance
 - Participated in the implementation of Scrum and actively engaged in development planning and research.
 - Technologies: Node, React, Vue, Drone.CI, MongoDB, SOAP, Next.js, ExpressJS, RabbitMQ, Reddis
 
@@ -138,6 +139,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Technologies: Serverless, TypeScript, NodeJS, Next.js, Amplify, Rust, S3, DynamoDB, MongoDB, Firebase, X-Ray
 - Over 20k unique regional target visitors daily on high (SEO, no ads, Page Speed green zone)
 - Over 8k daily users
+- A/B testing with real traffic
 
 ## Web development
 
