@@ -73,7 +73,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - Referal system
 - Rating
 - Inventory system
-- Nest, Next, TON, Netlify, MongoDB Atlas, TypeScript
+- Nest, Next, TON, Netlify, MongoDB Atlas, NATS, TypeScript
 - AI driven iterative development with TDD and SDD methodology
 - Codex for code generation and review + Google Antigravity for architecture and planning + Cursor/Kiro/Windsurf
 
@@ -100,19 +100,19 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 - During a project crisis caused by management changes, took ownership of the AI top-priority feature, decomposed it into a practical delivery plan when almost no domain experts were available, aligned the roadmap to a customer-approved 3-month estimate, delivered the core implementation in 1.5 months, and completed the follow-up improvements.
 - Tokenomics: Cashback in crypto in pair with Blockchain developer, Web3.js, ERC-20, Solidity (Polygon/Solidity/EVM capatible)
 - Early adopter of OpenAI Embeddings in Elasticsearch, before MongoDB supported vector search and before AstraDB/Pinecone became mainstream.
-- Technologies: TypeScript, NodeJS, NestJS, OpenAI API, Elastic Vector Search, MongoDB, Postgres, Docker, AWS EC2, React, Tailwind, Redux, …
+- Technologies: TypeScript, NodeJS, NestJS, OpenAI API, Elastic Vector Search, MongoDB, Postgres, NATS, Docker, AWS EC2, React, Tailwind, Redux, …
 
 ### CRM for Nursing Homes (2021-2022, part-time):
 - Worked part-time in consulting as an expert to assist with MVP finalisation of CRM for Nursing Homes in the USA. Health Tech domain.
 - Started actively contributing from the very first week, quickly taking ownership of practical MVP issues and helping the team move toward release.
-- Technologies: TypeScript, NodeJS, NestJS, Kubernetes, tilt, Golang, Apache Kafka, gRPC
+- Technologies: TypeScript, NodeJS, NestJS, Prisma, Kubernetes, tilt, Golang, Apache Kafka, gRPC
 *(I don’t remember everything to be honest)*
 
 ### Digital Document Exchange, Andersen Lab (2020~2022):
 *one of my favourites*
 - Developed a hybrid SaaS platform offering e-signatures, eKYC, and digital contract management services, and focused on the integration with ML 3rd-party platforms for eKYC face validation.
 - Feature ownership: face recognition authorisation for eKYC, access level control
-- Technologies: TypeScript, NodeJS, NestJS, PostgreSQL, Docker, Nginx, AWS, GraphQL.
+- Technologies: TypeScript, NodeJS, NestJS, PostgreSQL, Docker, Nginx, AWS, GraphQL, NATS.
 
 ### Analog of Ethereum Cats on a specific blockchain, Minter Network (2018-2018, part-time):
 - Studied the ecosystem: Minting tokens, staking
@@ -123,7 +123,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 
 ### PlanetAuto - Highload Car Accessories online store (2018~2019):
 - Joined by an individual invitation to assist with the launch of the online store.
-- Technologies: PHP, Laravel, Nuxt.js, Vue.js, SEO, 1C integration
+- Technologies: PHP, Laravel, Nuxt.js, Vue.js, RabbitMQ, SEO, 1C integration
 
 
 ### Cross-Gambling Loyalty Program for Restaurants, Checkpot.fun (2017~2018):
@@ -131,7 +131,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 
 - Successful local startup launch.
 - Participated in the implementation of Scrum and actively engaged in development planning and research.
-- Technologies: Node, React, Vue, Drone.CI, MongoDB, SOAP, Next.js, ExpressJS
+- Technologies: Node, React, Vue, Drone.CI, MongoDB, SOAP, Next.js, ExpressJS, RabbitMQ, Reddis
 
 ### Event-Oriented Websites and Projects:
 - This area was my business before starting a professional developer career; currently, it’s a pet project where I practice Serverless technologies.
