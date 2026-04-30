@@ -61,7 +61,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 
 ## Relevant projects:
 
-### TMA/TON Game (2026-present):
+### TMA/TON Game, KingOfTheHill.pro (2026-present):
 *Lead Fullstack Developer*
 
 - AGENTS.md as a source of truth
