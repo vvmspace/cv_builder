@@ -38,6 +38,7 @@ const BASE_BOT_WORKER_MODEL_CHAIN = [
     'gemini-2.5-flash',
     'openrouter/free',
     'gemini-2.0-flash',
+    'openrouter/free',
     'nvidia/llama-nemotron-embed-vl-1b-v2:free',
     'cognitivecomputations/dolphin-mistral-24b-venice-edition:free'
 ];
