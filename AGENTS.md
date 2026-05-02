@@ -60,6 +60,7 @@ Generate CV from vacancy text and full CV:
 - prompt.md (fallback: prompt.example.md) - template for LLM
 - full_cv.md (fallback: full_cv.example.md) - full CV. Can be sent as full_cv_text in body.
 - cv.json (fallback: cv.example.json) - example of CV JSON
+- save generated pdf, html and json
 
 Body:
 - vacancy_text: string
@@ -70,8 +71,9 @@ Body:
 
 
 Response:
-- html_url: string // relative path to cv
-- pdf_url: string // relative path to cv
+- html_url: string // relative path to cv html
+- pdf_url: string // relative path to cv pdf
+- json_url: string // relative path to cv json
 - pdf_absolute_path: string // absolute path to cv
 
 ### /api/v1/telegram/webhook

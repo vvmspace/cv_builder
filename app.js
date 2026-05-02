@@ -246,6 +246,7 @@ async function updateVacancy(post_link, {
     comment_text,
     greeting_message,
     model,
+    json_url,
     status = 'generated'
 }) {
     const collection = await getVacanciesCollection();
@@ -265,6 +266,7 @@ async function updateVacancy(post_link, {
                 comment_text: comment_text || null,
                 greeting_message: greeting_message || null,
                 model: model || null,
+                json_url: json_url || null,
                 status: status || 'generated',
                 updated_at: now
             }
@@ -420,6 +422,10 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
     const browser = await launchBrowser();
     const artifacts = [];
 
+    const jsonFilename = `${baseName}.json`;
+    const jsonPath = path.join(CV_DIR, jsonFilename);
+    fs.writeFileSync(jsonPath, JSON.stringify(generatedJson, null, 2));
+
     try {
         for (const template of templates) {
             const templatePath = getTemplatePath(template);
@@ -453,7 +459,9 @@ async function renderAndGeneratePdfs({ generatedJson, templates, baseName }) {
                 html_path: htmlPath,
                 pdf_path: pdfPath,
                 html_url: `/cvs/${htmlFilename}`,
-                pdf_url: `/cvs/${pdfFilename}`
+                pdf_url: `/cvs/${pdfFilename}`,
+                json_url: `/cvs/${jsonFilename}`,
+                json_path: jsonPath
             });
         }
     } finally {
@@ -636,6 +644,7 @@ async function processOneCreatedVacancy() {
                     post_link: vacancy.post_link || null,
                     comment_text: commentText || null,
                     greeting_message: generation.generatedJson.greeting_message || null,
+                    json_url: primaryArtifact.json_url || null,
                     model: generation.usedModel || null,
                     updated_at: new Date(),
                     worker_error: null
@@ -1008,6 +1017,7 @@ async function processTelegramUpdate(update) {
                     comment_text: commentText,
                     greeting_message: generation.generatedJson.greeting_message || null,
                     model: generation.usedModel || null,
+                    json_url: primaryArtifact.json_url || null,
                     status: 'generated'
                 });
             }
@@ -1072,6 +1082,7 @@ async function handleGenerateCvRequest(req, res) {
             success: true,
             html_url: artifact.html_url,
             pdf_url: artifact.pdf_url,
+            json_url: artifact.json_url,
             pdf_absolute_path: artifact.pdf_path,
             greeting_message: generation.generatedJson.greeting_message,
             match_rate: generation.generatedJson.match_rate ? parseInt(generation.generatedJson.match_rate) : null,
@@ -1237,6 +1248,7 @@ const openApiSpec = {
                                         success: { type: 'boolean' },
                                         html_url: { type: 'string' },
                                         pdf_url: { type: 'string' },
+                                        json_url: { type: 'string' },
                                         pdf_absolute_path: { type: 'string' }
                                     }
                                 }

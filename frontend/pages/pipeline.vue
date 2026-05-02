@@ -56,6 +56,8 @@ const htmlPath =
   'M2 1.75A1.75 1.75 0 0 1 3.75 0h4.04c.46 0 .9.18 1.23.51l2.47 2.47c.33.33.51.77.51 1.23v10.04A1.75 1.75 0 0 1 10.25 16h-6.5A1.75 1.75 0 0 1 2 14.25V1.75Zm5.5.5v2a1 1 0 0 0 1 1h2M3.7 10.8V6.9h.88v1.58h1.5V6.9h.89v3.9h-.89V9.23h-1.5v1.57H3.7Zm4.33 0V6.9h2.76v.77H8.92v.8h1.63v.76H8.92v.8h1.93v.77H8.03Z';
 const copyPath =
   'M3.75 2A1.75 1.75 0 0 0 2 3.75v7.5C2 12.22 2.78 13 3.75 13h5.5c.97 0 1.75-.78 1.75-1.75v-7.5A1.75 1.75 0 0 0 9.25 2h-5.5Zm7.5 2.5h.5c.97 0 1.75.78 1.75 1.75v6.5c0 .97-.78 1.75-1.75 1.75h-5.5A1.75 1.75 0 0 1 4.5 12.75v-.5h4.75c1.52 0 2.75-1.23 2.75-2.75V4.5Z';
+const jsonPath =
+  'M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5.362a1.5 1.5 0 0 0-.44-1.06L9.71 1.45A1.5 1.5 0 0 0 8.65 1.012l-4.65.488zm9.5 4.5h-3a1 1 0 0 1-1-1v-3l4 4zm-7.646 2.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L3.5 9.793l.646-.647a.5.5 0 0 1 .708 0zm4.792 0a.5.5 0 0 1 .708 0l1.5 1.5a.5.5 0 0 1-.708.708l-.646-.647v1.86a.5.5 0 0 1-.223.416l-1 1.5a.5.5 0 0 1-.832-.554l.805-1.208V11.5a.5.5 0 0 1 .5-.5h.646l-.647-.646a.5.5 0 0 1 0-.708z';
 
 function setAllTabCounts(list) {
   const next = {
@@ -150,6 +152,13 @@ function cvPdfLink(vacancy) {
 function cvHtmlLink(vacancy) {
   if (!vacancy.file_name) return '';
   return `/cvs/${vacancy.file_name.replace(/\.pdf$/i, '.html')}`;
+}
+
+function cvJsonLink(vacancy) {
+  if (vacancy.json_url) return vacancy.json_url;
+  if (!vacancy.file_name) return '';
+  // Fallback if not saved in db but follows the pattern
+  return `/cvs/${vacancy.file_name.replace(/_([a-zA-Z0-9_-]+)\.pdf$/i, '.json')}`;
 }
 
 function fileNameFromUrl(url, fallback) {
@@ -417,6 +426,15 @@ onBeforeUnmount(() => {
                 title="Download HTML"
               >
                 <svg viewBox="0 0 16 16" aria-hidden="true"><path :d="htmlPath" /></svg>
+              </a>
+              <a
+                v-if="cvJsonLink(vacancy)"
+                class="icon-link"
+                :href="cvJsonLink(vacancy)"
+                :download="fileNameFromUrl(cvJsonLink(vacancy), 'cv.json')"
+                title="Download JSON"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path :d="jsonPath" /></svg>
               </a>
             </div>
             <span v-else>-</span>

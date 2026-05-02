@@ -104,7 +104,7 @@ async function generateCV() {
     link.click();
     document.body.removeChild(link);
 
-    statusHtml.value = `Success! Downloading... <a href="${payload.html_url}" target="_blank" rel="noopener noreferrer"> [Open HTML]</a>`;
+    statusHtml.value = `Success! Downloading... <a href="${payload.html_url}" target="_blank" rel="noopener noreferrer"> [Open HTML]</a> <a href="${payload.json_url}" target="_blank" rel="noopener noreferrer"> [Open JSON]</a>`;
   } catch (error) {
     statusHtml.value = `<span style="color: #ff5555;">Error: ${error.message}</span>`;
   } finally {
