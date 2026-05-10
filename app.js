@@ -1155,7 +1155,7 @@ app.get('/api/v1/vacancies', async (req, res) => {
 
             const aTime = (a.updated_at || a.created_at || new Date(0)).getTime();
             const bTime = (b.updated_at || b.created_at || new Date(0)).getTime();
-            return aTime - bTime;
+            return bTime - aTime;
         });
 
         res.json({ vacancies });

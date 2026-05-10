@@ -108,15 +108,21 @@ function tabCount(status) {
 }
 
 const filteredVacancies = computed(() => {
+  let list = vacancies.value;
   const query = quickSearch.value.trim().toLowerCase();
-  if (query.length < 3) {
-    return vacancies.value;
+  
+  if (query.length >= 3) {
+    list = list.filter((item) => {
+      const role = String(item.position_title || '').toLowerCase();
+      const recruiter = String(item.recruiter_name || '').toLowerCase();
+      return role.includes(query) || recruiter.includes(query);
+    });
   }
 
-  return vacancies.value.filter((item) => {
-    const role = String(item.position_title || '').toLowerCase();
-    const recruiter = String(item.recruiter_name || '').toLowerCase();
-    return role.includes(query) || recruiter.includes(query);
+  return [...list].sort((a, b) => {
+    const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
+    const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
+    return bTime - aTime;
   });
 });
 
