@@ -61,6 +61,13 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 
 ## Relevant projects:
 
+### Remote jobs parser and CV generation ETL-pipeline util (2026-present):
+*Solo developer*
+
+- **To be perfectly frank**, this CV was generated using this util and enhanced manualy specially for this position
+- Remote jobs agregator parser
+- Telegram bot for CV 
+
 ### TMA/TON Game, KingOfTheHill.pro (2026-present):
 *Lead Fullstack Developer*
 
