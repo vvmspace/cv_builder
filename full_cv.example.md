@@ -97,7 +97,7 @@ Senior/Lead Full Stack Developer (Node + Rust, Python), Solution Architect with 
 ### AI Based Matching System, Noveo Group (2022~2024):
 
 - Joined as a senior backend/fullstack developer and played a pivotal role from research to planning and development, focusing on creating a matching system based on OpenAI Embeddings and GPT API (it was a rocket science at this moment).
-- During a project crisis caused by management changes, took ownership of the AI top-priority feature, decomposed it into a practical delivery plan when almost no domain experts were available, aligned the roadmap to a customer-approved 3-month estimate, delivered the core implementation in 1.5 months, and completed the follow-up improvements.
+- During a project crisis caused by management changes, took ownership of the AI top-priority feature, decomposed it into a practical delivery plan when almost no domain experts were available, aligned the roadmap to a customer-approved 3-month estimate, delivered the core implementation in 1.5 months, and completed the follow-up improvements. (achievement is complex estimation and x2 faster delivery with time buffer for improvements)
 - Tokenomics: Cashback in crypto in pair with Blockchain developer, Web3.js, ERC-20, Solidity (Polygon/Solidity/EVM capatible)
 - Early adopter of OpenAI Embeddings in Elasticsearch, before MongoDB supported vector search and before AstraDB/Pinecone became mainstream.
 - Technologies: TypeScript, NodeJS, NestJS, OpenAI API, Elastic Vector Search, MongoDB, Postgres, NATS, Docker, AWS EC2, React, Tailwind, Redux, …
