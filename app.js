@@ -622,13 +622,14 @@ async function processOneCreatedVacancy() {
             commentText = commentResult.commentMarkdown;
         }
 
+        const htmlArtifactForLink = lightArtifact || darkArtifact || generation.artifacts[0];
         const summary = buildTelegramSummaryMessage({
             recruiterName: vacancy.recruiter_name || null,
             recruiterContact: vacancy.recruiter_contact || null,
             postLink: vacancy.post_link || null,
             commentText,
             model: generation.usedModel || null,
-            htmlUrl: primaryArtifact ? `${process.env.FRONT_URL || ''}${primaryArtifact.html_url}` : null
+            htmlUrl: htmlArtifactForLink ? `${process.env.FRONT_URL || ''}${htmlArtifactForLink.html_url}` : null
         });
         const greetingMessage =
             generation.generatedJson.greeting_message &&
@@ -996,14 +997,14 @@ async function processTelegramUpdate(update) {
     const darkArtifact = generation.artifacts.find((a) => a.template !== 'light');
     const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
 
-    const primaryArtifactForLink = darkArtifact || lightArtifact || generation.artifacts[0];
+    const htmlArtifactForLink = lightArtifact || darkArtifact || generation.artifacts[0];
     const summary = buildTelegramSummaryMessage({
         recruiterName: linkedinData?.recruiter_name || null,
         recruiterContact: linkedinData?.recruiter_contact || null,
         postLink: linkedinData?.post_link || null,
         commentText,
         model: generation.usedModel || null,
-        htmlUrl: primaryArtifactForLink ? `${process.env.FRONT_URL || ''}${primaryArtifactForLink.html_url}` : null
+        htmlUrl: htmlArtifactForLink ? `${process.env.FRONT_URL || 'https://tma.kingofthehill.pro'}${htmlArtifactForLink.html_url}` : null
     });
 
     if (linkedinUrl) {
