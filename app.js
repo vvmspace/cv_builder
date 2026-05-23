@@ -627,7 +627,8 @@ async function processOneCreatedVacancy() {
             recruiterContact: vacancy.recruiter_contact || null,
             postLink: vacancy.post_link || null,
             commentText,
-            model: generation.usedModel || null
+            model: generation.usedModel || null,
+            htmlUrl: primaryArtifact ? `${process.env.FRONT_URL || ''}${primaryArtifact.html_url}` : null
         });
         const greetingMessage =
             generation.generatedJson.greeting_message &&
@@ -829,12 +830,13 @@ function getTelegramMessageFromUpdate(update) {
     return update?.message || update?.edited_message || update?.channel_post || update?.edited_channel_post || null;
 }
 
-function buildTelegramSummaryMessage({ recruiterName, recruiterContact, postLink, commentText, model }) {
+function buildTelegramSummaryMessage({ recruiterName, recruiterContact, postLink, commentText, model, htmlUrl }) {
     const lines = [];
     if (recruiterName) lines.push(`Recruiter: ${recruiterName}`);
     if (recruiterContact) lines.push(`Recruiter contact: ${recruiterContact}`);
     if (postLink) lines.push(`Post link: ${postLink}`);
     if (model) lines.push(`Model: ${model}`);
+    if (htmlUrl) lines.push(`HTML version: ${htmlUrl}`);
     lines.push('');
     lines.push(commentText || '');
     return lines.join('\n').trim();
@@ -994,12 +996,14 @@ async function processTelegramUpdate(update) {
     const darkArtifact = generation.artifacts.find((a) => a.template !== 'light');
     const lightArtifact = generation.artifacts.find((a) => a.template === 'light');
 
+    const primaryArtifactForLink = darkArtifact || lightArtifact || generation.artifacts[0];
     const summary = buildTelegramSummaryMessage({
         recruiterName: linkedinData?.recruiter_name || null,
         recruiterContact: linkedinData?.recruiter_contact || null,
         postLink: linkedinData?.post_link || null,
         commentText,
-        model: generation.usedModel || null
+        model: generation.usedModel || null,
+        htmlUrl: primaryArtifactForLink ? `${process.env.FRONT_URL || ''}${primaryArtifactForLink.html_url}` : null
     });
 
     if (linkedinUrl) {
